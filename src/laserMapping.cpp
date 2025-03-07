@@ -284,9 +284,6 @@
    last_timestamp_lidar = cur_time;
    s_plot11[scan_count] = omp_get_wtime() - preprocess_start_time;
  
-   RCLCPP_INFO(rclcpp::get_logger("LIO"), "[standard_pcl_cbk] Received pointcloud with %zu points at time=%.6f",
-               ptr->size(), cur_time);
- 
    lock.unlock();
    sig_buffer.notify_all();
  }
@@ -323,8 +320,6 @@
    {
      timediff_set_flg = true;
      timediff_lidar_wrt_imu = last_timestamp_lidar + 0.1 - last_timestamp_imu;
-     RCLCPP_INFO(rclcpp::get_logger("LIO"),
-                 "[livox_pcl_cbk] Self sync IMU & LiDAR: time diff=%.10f", timediff_lidar_wrt_imu);
    }
  
    PointCloudXYZI::Ptr ptr(new PointCloudXYZI());
@@ -333,10 +328,6 @@
    time_buffer.push_back(last_timestamp_lidar);
  
    s_plot11[scan_count] = omp_get_wtime() - preprocess_start_time;
- 
-   RCLCPP_INFO(rclcpp::get_logger("LIO"), "[livox_pcl_cbk] Received Livox pointcloud with %zu points at time=%.6f",
-               ptr->size(), cur_time);
- 
    lock.unlock();
    sig_buffer.notify_all();
  }
@@ -351,7 +342,7 @@
    if (fabs(timediff_lidar_wrt_imu) > 0.1 && time_sync_en)
    {
      double new_time = timediff_lidar_wrt_imu + get_time_sec(msg_in->header.stamp);
-     msg->header.stamp = rclcpp::Time(new_time);
+     msg->header.stamp = rclcpp::Time(new_time); 
    }
  
    double timestamp = get_time_sec(msg->header.stamp);
@@ -365,8 +356,6 @@
    last_timestamp_imu = timestamp;
    imu_buffer.push_back(msg);
  
-   RCLCPP_DEBUG(rclcpp::get_logger("LIO"), "[imu_cbk] IMU msg at time=%.6f, queue size now=%zu", 
-                timestamp, imu_buffer.size());
  
    lock.unlock();
    sig_buffer.notify_all();
@@ -762,13 +751,13 @@
      {
        sub_pcl_livox_ = this->create_subscription<livox_ros_driver2::msg::CustomMsg>(
                          lid_topic, 20, livox_pcl_cbk);
-       RCLCPP_INFO(get_logger(), "[on_configure] Subscribed to Livox topic: %s", lid_topic.c_str());
+       RCLCPP_INFO(get_logger(), "[on_configure] Subscribed to Livox topic: %s, LiDAR type : %d", lid_topic.c_str(), p_pre->lidar_type);
      }
      else
      {
        sub_pcl_pc_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
                        lid_topic, rclcpp::SensorDataQoS(), standard_pcl_cbk);
-       RCLCPP_INFO(get_logger(), "[on_configure] Subscribed to std PC2 topic: %s", lid_topic.c_str());
+       RCLCPP_INFO(get_logger(), "[on_configure] Subscribed to std PC2 topic: %s, LiDAR type : %d", lid_topic.c_str(), p_pre->lidar_type);
      }
      sub_imu_ = this->create_subscription<sensor_msgs::msg::Imu>(
                    imu_topic, 10, imu_cbk);
@@ -946,9 +935,6 @@
        publish_odometry();
  
        double total_time = t5 - t0;
-       RCLCPP_INFO(get_logger(), 
-                   "[timer_callback] One scan done. feats=%d, kdtree_size=%d, solve_time=%.3f, total=%.3f",
-                   feats_down_size, ikdtree.size(), solve_time, total_time);
  
        if (runtime_pos_log)
        {
