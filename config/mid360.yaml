@@ -24,7 +24,7 @@
             scan_rate: 10
         
         tf:
-            odom_frame_id: "odom"
+            parent_frame_id: "odom"
             child_frame_id: "base_link"
 
         mapping:

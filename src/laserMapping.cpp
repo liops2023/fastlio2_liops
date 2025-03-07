@@ -632,7 +632,7 @@
      this->declare_parameter<bool>("feature_extract_enable", false);
      this->declare_parameter<bool>("runtime_pos_log_enable", false);
      this->declare_parameter<bool>("mapping.extrinsic_est_en", true);
-     this->declare_parameter<std::string>("tf.odom_frame_id", "odom");
+     this->declare_parameter<std::string>("tf.parent_frame_id", "odom");
      this->declare_parameter<std::string>("tf.child_frame_id", "base_link");
      this->declare_parameter<std::vector<double>>("mapping.extrinsic_T", std::vector<double>());
      this->declare_parameter<std::vector<double>>("mapping.extrinsic_R", std::vector<double>());
@@ -680,7 +680,7 @@
      p_pre->feature_enabled  = this->get_parameter("feature_extract_enable").as_bool();
      runtime_pos_log         = this->get_parameter("runtime_pos_log_enable").as_bool();
      extrinsic_est_en        = this->get_parameter("mapping.extrinsic_est_en").as_bool();
-     odom_frame_id_ = this->get_parameter("tf.odom_frame_id").as_string();
+     parent_frame_id_ = this->get_parameter("tf.parent_frame_id").as_string();
      child_frame_id_ = this->get_parameter("tf.child_frame_id").as_string();
      extrinT                 = this->get_parameter("mapping.extrinsic_T").as_double_array();
      extrinR                 = this->get_parameter("mapping.extrinsic_R").as_double_array();
@@ -983,7 +983,7 @@
    void publish_odometry()
    {
      // Fill in odom
-     odomAftMapped.header.frame_id = odom_frame_id_;
+     odomAftMapped.header.frame_id = parent_frame_id_;
      odomAftMapped.child_frame_id = child_frame_id_;
      odomAftMapped.header.stamp = get_ros_time(lidar_end_time);
      odomAftMapped.pose.pose.position.x = state_point.pos(0);
