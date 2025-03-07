@@ -7,9 +7,8 @@
 #include <pcl/point_cloud.h>
 #include <fast_lio/msg/pose6_d.hpp>
 #include <sensor_msgs/msg/imu.hpp>
-#include <nav_msgs/msg/odometry.hpp>
-
-#include <deque>
+#include <nav_msgs/msg/odometry.hpp> 
+#include <deque> // 기존 std::deque 사용 시 에러
 
 using namespace std;
 using namespace Eigen;
