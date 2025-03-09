@@ -621,6 +621,8 @@
      this->declare_parameter<bool>("publish.scan_publish_en", true);
      this->declare_parameter<bool>("publish.dense_publish_en", true);
      this->declare_parameter<bool>("publish.scan_bodyframe_pub_en", true);
+     this->declare_parameter<bool>("publish.cloud_registered_en", false);
+     this->declare_parameter<std::string>("publish.cloud_registered_topic", "/cloud_registered");
      this->declare_parameter<int>("max_iteration", 4);
      this->declare_parameter<std::string>("common.lid_topic", "/livox/lidar");
      this->declare_parameter<std::string>("common.imu_topic", "/livox/imu");
@@ -665,6 +667,8 @@
      scan_pub_en            = this->get_parameter("publish.scan_publish_en").as_bool();
      dense_pub_en           = this->get_parameter("publish.dense_publish_en").as_bool();
      scan_body_pub_en       = this->get_parameter("publish.scan_bodyframe_pub_en").as_bool();
+     cloud_registered_en_   = this->get_parameter("publish.cloud_registered_en").as_bool();
+     cloud_registered_topic_ = this->get_parameter("publish.cloud_registered_topic").as_string();
      NUM_MAX_ITERATIONS     = this->get_parameter("max_iteration").as_int();
      lid_topic              = this->get_parameter("common.lid_topic").as_string();
      imu_topic              = this->get_parameter("common.imu_topic").as_string();
@@ -771,7 +775,15 @@
    {
      RCLCPP_INFO(get_logger(), "[on_activate]...");
      pubOdomAftMapped_->on_activate();
- 
+     if (cloud_registered_en_)
+     {
+       // QoS는 적절히 SensorDataQoS()나 DefaultQoS()로 할 수 있음
+       pubCloudRegistered_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+                              cloud_registered_topic_, rclcpp::QoS(10).reliability(rclcpp::ReliabilityPolicy::Reliable));
+       pubCloudRegistered_->on_activate();
+       RCLCPP_INFO(get_logger(), "cloud_registered publisher created on topic: %s",
+                   cloud_registered_topic_.c_str());
+     }
      auto period_ms = std::chrono::milliseconds(static_cast<int64_t>(1000.0/100.0));
      timer_ = this->create_wall_timer(period_ms,
                  std::bind(&LaserMappingLifecycleNode::timer_callback, this));
@@ -788,6 +800,12 @@
      {
        timer_->cancel();
        timer_.reset();
+     }
+
+     // [ADD] cloud_registered 퍼블리셔도 비활성화
+     if (pubCloudRegistered_)
+     {
+       pubCloudRegistered_->on_deactivate();
      }
      pubOdomAftMapped_->on_deactivate();
  
@@ -930,7 +948,12 @@
        double t_update_end = omp_get_wtime();
        map_incremental();
        double t5 = omp_get_wtime();
- 
+      
+       if (cloud_registered_en_ && pubCloudRegistered_)
+       {
+         publish_cloud_registered();
+       }
+
        // publish odom
        publish_odometry();
  
@@ -988,7 +1011,48 @@
        }
      }
    }
+
+
+   void publish_cloud_registered()
+   {
+     // feats_undistort는 Lidar-body 프레임(내지는 스캔 시점)에서 "motion-보정"이 적용된 상태
+     // -> world(odom) 좌표로 변환해서 퍼블리시
+     // (이미 "undistort" 자체가 시간보정 포함이지만, 최종 위치는 odom 기준)
  
+     auto cloud_size = feats_undistort->points.size();
+     RCLCPP_INFO(get_logger(), "[publish_cloud_registered] cloud_size=%zu", cloud_size);
+     if (cloud_size == 0) return;
+ 
+     // 1) feats_undistort -> odom 변환
+     PointCloudXYZI::Ptr cloud_odom(new PointCloudXYZI());
+     cloud_odom->resize(cloud_size);
+ 
+     for (size_t i = 0; i < cloud_size; i++)
+     {
+       const auto & pt_in  = feats_undistort->points[i];
+       auto & pt_out       = cloud_odom->points[i];
+ 
+       // pointBodyToWorld: (pt_in) -> (pt_out) using state_point
+       V3D p_body(pt_in.x, pt_in.y, pt_in.z);
+       V3D p_global(state_point.rot * (state_point.offset_R_L_I * p_body + state_point.offset_T_L_I)
+                                 + state_point.pos);
+ 
+       pt_out.x = p_global(0);
+       pt_out.y = p_global(1);
+       pt_out.z = p_global(2);
+       pt_out.intensity = pt_in.intensity;
+     }
+ 
+     // 2) ROS 메시지로 변환
+     sensor_msgs::msg::PointCloud2 cloud_msg;
+     pcl::toROSMsg(*cloud_odom, cloud_msg);
+     cloud_msg.header.stamp = get_ros_time(lidar_end_time);
+     cloud_msg.header.frame_id = "odom";
+ 
+     // 3) 퍼블리시
+     pubCloudRegistered_->publish(cloud_msg);
+   }
+
    void publish_odometry()
    {
      // fill odom
@@ -1046,9 +1110,14 @@
  
    std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
    rclcpp::TimerBase::SharedPtr timer_;
+
+   rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubCloudRegistered_{nullptr};
+
  
    bool path_en_{false};
    FILE* pos_log_fp_{nullptr};
+   bool cloud_registered_en_{false};          // [ADD]
+   std::string cloud_registered_topic_{""};   // [ADD]
    std::ofstream fout_pre_, fout_out_, fout_dbg_;
    double epsi_[23];
    pcl::VoxelGrid<PointType> downSizeFilterSurf;
