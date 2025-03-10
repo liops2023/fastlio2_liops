@@ -1007,8 +1007,8 @@
                  << " " << state_point.vel.transpose()
                  << " " << state_point.bg.transpose()
                  << " " << state_point.ba.transpose()
-                 << " " << state_point.grav[1].transpose()
-                 << " " << state_point.grav[2].transpose()
+                 << " " << state_point.grav[1]
+                 << " " << state_point.grav[2]
                  << feats_undistort->points.size()
                  << std::endl;
      }
@@ -1028,8 +1028,8 @@
                  << " " << state_point.vel.transpose()
                  << " " << state_point.bg.transpose()
                  << " " << state_point.ba.transpose()
-                 << " " << state_point.grav[1].transpose()
-                 << " " << state_point.grav[2].transpose()
+                 << " " << state_point.grav[1]
+                 << " " << state_point.grav[2]
                  << feats_undistort->points.size()
                  << std::endl;
      }
