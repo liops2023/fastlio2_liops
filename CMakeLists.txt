@@ -48,12 +48,6 @@ endif()
 find_package(PythonLibs REQUIRED)
 find_path(MATPLOTLIB_CPP_INCLUDE_DIRS "matplotlibcpp.h")
 
-find_path(RELOCALIZATION_BBS3D_INCLUDE_DIR
-  NAMES "relocalization_bbs3d/action/get_relocalization_pose.hpp"
-  PATHS "${CMAKE_INSTALL_PREFIX}/include"
-  REQUIRED
-)
-
 # ROS dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -124,11 +118,13 @@ target_include_directories(fastlio_mapping PUBLIC
   $<INSTALL_INTERFACE:include>
   ${PCL_INCLUDE_DIRS}
   ${PYTHON_INCLUDE_DIRS}
+  ${CMAKE_INSTALL_PREFIX}/includ
 )
 target_link_libraries(fastlio_mapping
   ${PCL_LIBRARIES}
   ${PYTHON_LIBRARIES}
   Eigen3::Eigen
+  relocalization_bbs3d__rosidl_typesupport_cpp
 )
 
 target_link_libraries(${PROJECT_NAME}
