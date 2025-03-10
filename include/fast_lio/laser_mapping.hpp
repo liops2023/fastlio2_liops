@@ -3,15 +3,13 @@
 
 /********************************************************************************************
  * Full LIO-Mapping code, refactored into a Nav2 Lifecycle Node.
- * 
+ *
  * Differences from the original:
  *   - Uses nav2_utils::LifecycleNode format (on_configure, on_activate, etc.).
- *   - All map publishing (pointcloud map, path, etc.) has been removed.
+ *   - Map/Path publishing omitted (we only do odom, tf, optional "cloud_registered").
  *   - Odometry is published with frame_id = "odom" and child_frame_id = "base_link".
- *   - A lifecycle "reset" (on_deactivate->on_activate or on_cleanup->on_configure)
- *     re-initializes the internal states, effectively restarting the estimator.
- *
- * No code segments omitted to ensure full LIO functionality in this example.
+ *   - Lifecycle "reset" (on_deactivate->on_activate or on_cleanup->on_configure)
+ *     re-initializes internal states, effectively restarting the estimator.
  ********************************************************************************************/
 
 #include <chrono>
@@ -32,15 +30,20 @@
 #include <livox_ros_driver2/msg/custom_msg.hpp>
 
 #include <Eigen/Core>
-#include <pcl/point_types.h>
 #include <pcl/filters/voxel_grid.h>
 
-#include "relocalization_bbs3d/action/get_relocalization_pose.hpp"
+// 원본 액션 (Reloc)
+#include <relocalization_bbs3d/action/get_relocalization_pose.hpp>
 
-using PointType = pcl::PointXYZI;
-
-// 전방 선언
-struct MeasureGroup;
+/**
+ * common_lib.h 내부에서 이미 다음을 포함한다고 가정:
+ *   typedef pcl::PointXYZINormal PointType;
+ *   + 여러 유틸 매크로/함수 (esti_plane, time_list, ...)
+ */
+#include "fast_lio/common_lib.h"  // <-- 여기서 PointType, etc. 정의됨
+#include "fast_lio/IMU_Processing.hpp"
+#include "fast_lio/preprocess.h"
+#include <ikd-Tree/ikd_Tree.h>  // ikdtree
 
 //---------------------------------------------------------------------
 // LaserMappingLifecycleNode
@@ -60,17 +63,17 @@ protected:
   nav2_util::CallbackReturn on_shutdown(const rclcpp_lifecycle::State &) override;
 
 private:
-  // 주 타이머 콜백
+  // 주 타이머 콜백 (메인 loop)
   void timer_callback();
-
-  // Relocalization 액션 클라이언트 요청/응답
-  void request_relocalization();
-  void relocalization_response_callback(
-    const rclcpp_action::ClientGoalHandle<relocalization_bbs3d::action::GetRelocalizationPose>::WrappedResult &result);
 
   // publish 유틸
   void publish_cloud_registered();
   void publish_odometry();
+
+  // Relocalization 액션 클라이언트
+  void request_relocalization();
+  void relocalization_response_callback(
+    const rclcpp_action::ClientGoalHandle<relocalization_bbs3d::action::GetRelocalizationPose>::WrappedResult &result);
 
   // ROS 멤버
   rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Odometry>::SharedPtr pubOdomAftMapped_;
@@ -83,21 +86,26 @@ private:
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
   rclcpp::TimerBase::SharedPtr timer_;
 
+  // Reloc action
   using GetRelocPose = relocalization_bbs3d::action::GetRelocalizationPose;
   using GetRelocPoseClient = rclcpp_action::Client<GetRelocPose>;
   GetRelocPoseClient::SharedPtr reloc_action_client_;
 
-  // 매개변수 및 상태
+  // 노드 파라미터/상태
   bool path_en_{false};
   bool cloud_registered_en_{false};
   std::string cloud_registered_topic_{""};
   FILE *pos_log_fp_{nullptr};
 
+  // Debug 출력 파일
   std::ofstream fout_pre_, fout_out_, fout_dbg_;
-  double epsi_[23];
+  double epsi_[23] = {0.0};
 
+  // 다운샘플 필터
   pcl::VoxelGrid<PointType> downSizeFilterSurf;
   pcl::VoxelGrid<PointType> downSizeFilterMap;
+
+  // 내부 상태
   int frame_num_{0};
   int kdtree_size_end{0};
 };
