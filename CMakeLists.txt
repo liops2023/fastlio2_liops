@@ -48,9 +48,16 @@ endif()
 find_package(PythonLibs REQUIRED)
 find_path(MATPLOTLIB_CPP_INCLUDE_DIRS "matplotlibcpp.h")
 
+find_path(RELOCALIZATION_BBS3D_INCLUDE_DIR
+  NAMES "relocalization_bbs3d/action/get_relocalization_pose.hpp"
+  PATHS "${CMAKE_INSTALL_PREFIX}/include"
+  REQUIRED
+)
+
 # ROS dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
@@ -62,12 +69,14 @@ find_package(pcl_ros REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(livox_ros_driver2 REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+find_package(rosidl_default_runtime REQUIRED)
 find_package(nav2_util REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(relocalization_bbs3d REQUIRED)
 
 set(dependencies
   rclcpp
+  rclcpp_action
   rclcpp_components
   geometry_msgs
   nav_msgs
@@ -83,6 +92,13 @@ set(dependencies
 
 find_package(Eigen3 REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common io)
+
+# 액션 인터페이스 헤더 찾기
+find_path(RELOCALIZATION_BBS3D_INCLUDE_DIR
+  NAMES "relocalization_bbs3d/action/get_relocalization_pose.hpp"
+  PATHS "${CMAKE_INSTALL_PREFIX}/include"
+  REQUIRED
+)
 
 message(STATUS "Eigen include: ${EIGEN3_INCLUDE_DIR}")
 message(STATUS "PCL includes: ${PCL_INCLUDE_DIRS}")
