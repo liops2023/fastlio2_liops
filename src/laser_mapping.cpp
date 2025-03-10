@@ -11,40 +11,18 @@
  #include <thread>
  #include <csignal>
  #include <chrono>
- #include <fstream>
  #include <unistd.h> // for usleep
  #include <Python.h> // optional if using python libs
  
  // ROS2 + Nav2
  #include <rclcpp/rclcpp.hpp>
- #include <nav2_util/lifecycle_node.hpp>
  #include <nav2_util/node_utils.hpp>
- #include <tf2_ros/transform_broadcaster.h>
- #include <rclcpp_action/rclcpp_action.hpp>
- 
- // 메시지
- #include <nav_msgs/msg/odometry.hpp>
- #include <sensor_msgs/msg/point_cloud2.hpp>
- #include <sensor_msgs/msg/imu.hpp>
- #include <geometry_msgs/msg/transform_stamped.hpp>
  #include <pcl_conversions/pcl_conversions.h>
- #include <pcl/filters/voxel_grid.h>
- 
- // Livox
- #include <livox_ros_driver2/msg/custom_msg.hpp>
- 
- // ESKF
- #include "fast_lio/common_lib.h"        // 여기서 PointType = pcl::PointXYZINormal 등 선언
- #include "fast_lio/IMU_Processing.hpp"
- #include "fast_lio/preprocess.h"
- #include <ikd-Tree/ikd_Tree.h>
- 
- #include "fast_lio/laser_mapping.hpp"   // 헤더 (클래스 선언)
- #include <relocalization_bbs3d/action/get_relocalization_pose.hpp>
+
+ #include "fast_lio/laser_mapping.hpp"   
  
  // IKFoM
  #include <use-ikfom.hpp>  // get_f, df_dx, df_dw 등 ESKF 적분 관련
- #include <Eigen/Core>
  #include <Eigen/Eigen>
  
  // ===== 매크로 (원본 코드에서 가져옴) =====
