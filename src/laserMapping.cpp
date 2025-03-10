@@ -788,10 +788,12 @@ protected:
     RCLCPP_INFO(get_logger(), "[on_configure] complete. Ready to activate.");
     // 액션 클라이언트 생성
     reloc_action_client_ = rclcpp_action::create_client<GetRelocPose>(
-        this->get_node_base_interface(),
-        this->get_node_clock_interface(),
-        this->get_node_logging_interface(),
-        "get_relocalization_pose");
+      this->get_node_base_interface(),
+      this->get_node_graph_interface(),       // <-- node_graph가 필요
+      this->get_node_logging_interface(),
+      this->get_node_waitables_interface(),   // <-- node_waitables까지
+      "get_relocalization_pose"
+    );
 
     RCLCPP_INFO(get_logger(), "[on_configure] complete. Ready to activate.");
 
@@ -1152,9 +1154,9 @@ private:
     goal_msg.request = true;
   
     auto send_goal_options = rclcpp_action::Client<GetRelocPose>::SendGoalOptions();
-    send_goal_options.result_callback = 
-      std::bind(&LaserMappingLifecycleNode::relocalization_response_callback, this, std::placeholders::_1);
-  
+    send_goal_options.result_callback =
+      std::bind(&LaserMappingLifecycleNode::relocalization_response_callback,
+                this, std::placeholders::_1);
     reloc_action_client_->async_send_goal(goal_msg, send_goal_options);
   }
 
