@@ -91,13 +91,6 @@ set(dependencies
 find_package(Eigen3 REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common io)
 
-# 액션 인터페이스 헤더 찾기
-find_path(RELOCALIZATION_BBS3D_INCLUDE_DIR
-  NAMES "relocalization_bbs3d/action/get_relocalization_pose.hpp"
-  PATHS "${CMAKE_INSTALL_PREFIX}/include"
-  REQUIRED
-)
-
 message(STATUS "Eigen include: ${EIGEN3_INCLUDE_DIR}")
 message(STATUS "PCL includes: ${PCL_INCLUDE_DIRS}")
 
@@ -122,7 +115,7 @@ target_include_directories(fastlio_mapping PUBLIC
   $<INSTALL_INTERFACE:include>
   ${PCL_INCLUDE_DIRS}
   ${PYTHON_INCLUDE_DIRS}
-  ${CMAKE_INSTALL_PREFIX}/includ
+  ${CMAKE_INSTALL_PREFIX}/include
 )
 target_link_libraries(fastlio_mapping
   ${PCL_LIBRARIES}
