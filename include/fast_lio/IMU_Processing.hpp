@@ -7,7 +7,6 @@
 #include <csignal>
 #include <so3_math.h>
 #include <Eigen/Eigen>
-#include <common_lib.h>
 #include <pcl/common/io.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -20,7 +19,7 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
 #include "use-ikfom.hpp"
-
+#include "fast_lio/common_lib.h"
 /// *************Preconfiguration
 
 #define MAX_INI_COUNT (10)
