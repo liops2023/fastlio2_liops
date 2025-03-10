@@ -169,7 +169,6 @@ target_link_libraries(fastlio_mapping
   ${PYTHON_LIBRARIES}
   Eigen3::Eigen
   # relocalization_bbs3d 메시지 타입 서포트
-  relocalization_bbs3d__rosidl_typesupport_cpp
 )
 
 #----------------------#
