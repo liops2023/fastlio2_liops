@@ -1155,7 +1155,7 @@ private:
   
     auto send_goal_options = rclcpp_action::Client<GetRelocPose>::SendGoalOptions();
     send_goal_options.result_callback =
-      std::bind(&LaserMappingLifecycleNode::relocalization_response_callback,
+      std::bind(&relocalization_response_callback,
                 this, std::placeholders::_1);
     reloc_action_client_->async_send_goal(goal_msg, send_goal_options);
   }
