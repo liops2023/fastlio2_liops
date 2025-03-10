@@ -85,7 +85,7 @@ private:
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
   rclcpp::TimerBase::SharedPtr timer_;
 
-  double filter_size_corner_min_;
+  double filter_size_corner_min;
   double filter_size_surf_min;
   double filter_size_map_min;
 
