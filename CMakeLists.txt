@@ -86,6 +86,7 @@ set(dependencies
   pcl_conversions
   livox_ros_driver2
   nav2_util
+  relocalization_bbs3d
 )
 
 find_package(Eigen3 REQUIRED)
