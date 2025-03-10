@@ -63,6 +63,10 @@
  static bool runtime_pos_log = false;
  
  static double cube_len = 200.0;
+
+ double filter_size_corner_min;
+ double filter_size_surf_min;
+ double filter_size_map_min;
  
  // ESKF
  static esekfom::esekf<state_ikfom, 12, input_ikfom> kf;
