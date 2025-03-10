@@ -63,6 +63,8 @@ find_package(pcl_conversions REQUIRED)
 find_package(livox_ros_driver2 REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(nav2_util REQUIRED)
+find_package(rclcpp_action REQUIRED)
+find_package(relocalization_bbs3d REQUIRED)
 
 set(dependencies
   rclcpp
@@ -111,6 +113,12 @@ target_link_libraries(fastlio_mapping
   ${PCL_LIBRARIES}
   ${PYTHON_LIBRARIES}
   Eigen3::Eigen
+)
+
+target_link_libraries(${PROJECT_NAME}
+  ${PCL_LIBRARIES}
+  ${OTHER_LIBRARIES}
+  relocalization_bbs3d__rosidl_typesupport_cpp
 )
 
 list(APPEND EOL_LIST "foxy" "galactic" "eloquent" "dashing" "crystal")
