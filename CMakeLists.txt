@@ -130,6 +130,7 @@ target_link_libraries(fastlio_mapping
 target_link_libraries(${PROJECT_NAME}
   ${PCL_LIBRARIES}
   ${OTHER_LIBRARIES}
+  ${gpu_bbs3d_LIBRARY}
   relocalization_bbs3d__rosidl_typesupport_cpp
 )
 
