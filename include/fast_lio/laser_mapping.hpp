@@ -29,7 +29,6 @@
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <livox_ros_driver2/msg/custom_msg.hpp>
 
-#include <Eigen/Core>
 #include <pcl/filters/voxel_grid.h>
 
 // 원본 액션 (Reloc)
@@ -85,6 +84,10 @@ private:
 
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
   rclcpp::TimerBase::SharedPtr timer_;
+
+  double filter_size_map_min;
+  double filter_size_surf_min;
+  double filter_size_map_min;
 
   // Reloc action
   using GetRelocPose = relocalization_bbs3d::action::GetRelocalizationPose;
