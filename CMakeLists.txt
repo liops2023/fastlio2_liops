@@ -93,7 +93,7 @@ find_package(PCL REQUIRED COMPONENTS common io)
 
 # 액션 인터페이스 헤더 찾기
 find_path(RELOCALIZATION_BBS3D_INCLUDE_DIR
-  NAMES "relocalization_bbs3d/action/GetRelocalizationPose.hpp"
+  NAMES "relocalization_bbs3d/action/get_relocalization_pose.hpp"
   PATHS "${CMAKE_INSTALL_PREFIX}/include"
   REQUIRED
 )
