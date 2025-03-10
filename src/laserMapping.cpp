@@ -1203,11 +1203,6 @@ private:
   using GetRelocPose = relocalization_bbs3d::action::GetRelocalizationPose;
   using GetRelocPoseClient = rclcpp_action::Client<GetRelocPose>;
   GetRelocPoseClient::SharedPtr reloc_action_client_;
-
-  // Method to call relocalization
-  void request_relocalization();
-  void relocalization_response_callback(
-      const rclcpp_action::ClientGoalHandle<GetRelocPose>::WrappedResult &result);
 };
 
 /***************************************************
