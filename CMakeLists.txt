@@ -10,9 +10,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# cmake 폴더에 있는 사용자 정의 Find 모듈을 사용하기 위해 경로 추가
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
 
 ### 추가 최적화, 예: -O3, -fexceptions, -pthread 등
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -pthread -fexceptions")
@@ -49,8 +47,8 @@ if(OPENMP_FOUND)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}   ${OpenMP_C_FLAGS}")
 endif()
 
+### Python (for Py_xxx), matplotlib 필요 시
 find_package(PythonLibs REQUIRED)
-find_path(MATPLOTLIB_CPP_INCLUDE_DIRS "matplotlibcpp.h")
 
 # ROS dependencies
 find_package(ament_cmake REQUIRED)
@@ -66,10 +64,10 @@ find_package(visualization_msgs REQUIRED)
 find_package(pcl_ros REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(livox_ros_driver2 REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
-find_package(rosidl_default_runtime REQUIRED)
 find_package(nav2_util REQUIRED)
-find_package(rclcpp_action REQUIRED)
+find_package(tf2_ros REQUIRED)
+
+# relocalization_bbs3d (액션)
 find_package(relocalization_bbs3d REQUIRED)
 
 set(dependencies
@@ -86,6 +84,7 @@ set(dependencies
   pcl_conversions
   livox_ros_driver2
   nav2_util
+  tf2_ros
   relocalization_bbs3d
 )
 
@@ -95,20 +94,14 @@ find_package(PCL REQUIRED COMPONENTS common io)
 message(STATUS "Eigen include: ${EIGEN3_INCLUDE_DIR}")
 message(STATUS "PCL includes: ${PCL_INCLUDE_DIRS}")
 
-set(msg_files
-  "msg/Pose6D.msg"
-)
-
-rosidl_generate_interfaces(${PROJECT_NAME}
-  ${msg_files}
-)
-ament_export_dependencies(rosidl_default_runtime)
-
 ### 빌드할 실행파일
 add_executable(fastlio_mapping
-  src/laserMapping.cpp
-  include/ikd-Tree/ikd_Tree.cpp
+  src/laser_mapping.cpp
+  src/common_lib.cpp
+  src/IMU_Processing.cpp
   src/preprocess.cpp
+  src/ikd_Tree.cpp
+  # 필요 시 src/time_utils.cpp ...
 )
 
 target_include_directories(fastlio_mapping PUBLIC
@@ -118,35 +111,30 @@ target_include_directories(fastlio_mapping PUBLIC
   ${PYTHON_INCLUDE_DIRS}
   ${CMAKE_INSTALL_PREFIX}/include
 )
+
 target_link_libraries(fastlio_mapping
   ${PCL_LIBRARIES}
   ${PYTHON_LIBRARIES}
   Eigen3::Eigen
-  relocalization_bbs3d__rosidl_typesupport_cpp
 )
-
-list(APPEND EOL_LIST "foxy" "galactic" "eloquent" "dashing" "crystal")
-
-if($ENV{ROS_DISTRO} IN_LIST EOL_LIST)
-  # Custom msg for older distros
-  rosidl_target_interfaces(fastlio_mapping
-    ${PROJECT_NAME} "rosidl_typesupport_cpp")
-else()
-  rosidl_get_typesupport_target(cpp_typesupport_target
-    ${PROJECT_NAME} "rosidl_typesupport_cpp")
-  target_link_libraries(fastlio_mapping ${cpp_typesupport_target})
-endif()
 
 ament_target_dependencies(fastlio_mapping ${dependencies})
 
-### 설치
+### 설치: 실행파일
 install(TARGETS fastlio_mapping
   DESTINATION lib/${PROJECT_NAME}
+)
+
+### 설치: 헤더(및 기타 폴더)
+install(
+  DIRECTORY include/
+  DESTINATION include/
 )
 
 install(
   DIRECTORY config launch rviz
   DESTINATION share/${PROJECT_NAME}
+  OPTIONAL
 )
 
 ament_package()
