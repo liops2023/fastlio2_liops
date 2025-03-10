@@ -97,11 +97,7 @@ message(STATUS "PCL includes: ${PCL_INCLUDE_DIRS}")
 ### 빌드할 실행파일
 add_executable(fastlio_mapping
   src/laser_mapping.cpp
-  src/common_lib.cpp
-  src/IMU_Processing.cpp
   src/preprocess.cpp
-  src/ikd_Tree.cpp
-  # 필요 시 src/time_utils.cpp ...
 )
 
 target_include_directories(fastlio_mapping PUBLIC
