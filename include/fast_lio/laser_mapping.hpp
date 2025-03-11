@@ -107,6 +107,15 @@ private:
   // 내부 상태
   int frame_num_{0};
   int kdtree_size_end{0};
+
+  //=== 재시도용 스레드 관련 ===
+  std::thread reloc_attempt_thread_;        // 재시도 스레드
+  std::atomic<bool> reloc_stop_flag_{false}; // stop 여부
+  double reloc_score_threshold_ = 100.0;     // 점수 임계치
+  int reloc_timeout_sec_ = 300;             // 최대 재시도 시간(초)
+  
+  void start_reloc_retry_loop(); // 재시도 루프 시작 함수
+  void reloc_retry_loop();       // 스레드 내에서 동작할 실제 루프
 };
 
 #endif  // FAST_LIO__LASER_MAPPING_HPP_

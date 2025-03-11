@@ -16,7 +16,7 @@ def generate_launch_description():
     
     # Config paths
     default_config_path = os.path.join(fast_lio_pkg_dir, 'config')
-    default_rviz_config_path = os.path.join(fast_lio_pkg_dir, 'rviz', 'combined.rviz')
+    default_rviz_config_path = os.path.join(fast_lio_pkg_dir, 'rviz', 'fastlio.rviz')
     relocalization_config_file = os.path.join(relocalization_pkg_dir, 'config', 'bbs3d_config.yaml')
     
     # Launch configurations

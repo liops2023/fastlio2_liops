@@ -1,328 +1,416 @@
 Panels:
-  - Class: rviz/Displays
-    Help Height: 0
+  - Class: rviz_common/Displays
+    Help Height: 78
     Name: Displays
     Property Tree Widget:
       Expanded:
         - /Global Options1
         - /Status1
-        - /TF1
-        - /TF1/Frames1
-        - /Odometry1
-        - /Pointclouds1
-      Splitter Ratio: 0.6432291865348816
-    Tree Height: 811
-  - Class: rviz/Selection
+      Splitter Ratio: 0.5
+    Tree Height: 549
+  - Class: rviz_common/Selection
     Name: Selection
-  - Class: rviz/Tool Properties
+  - Class: rviz_common/Tool Properties
     Expanded:
-      - /2D Pose Estimate1
-      - /2D Nav Goal1
+      - /2D Goal Pose1
       - /Publish Point1
     Name: Tool Properties
     Splitter Ratio: 0.5886790156364441
-  - Class: rviz/Views
+  - Class: rviz_common/Views
     Expanded:
       - /Current View1
     Name: Views
     Splitter Ratio: 0.5
-  - Class: rviz/Time
+  - Class: rviz_common/Time
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: PointCloud2
-
-Preferences:
-  PromptSaveOnExit: true
-
-Toolbars:
-  toolButtonStyle: 2
+    SyncSource: CloudRegistered
 
 Visualization Manager:
   Class: ""
   Displays:
-
-    # ===== Grid =====
-    - Alpha: 1
-      Cell Size: 1000
-      Class: rviz/Grid
-      Color: 160; 160; 164
-      Enabled: true
-      Line Style:
-        Line Width: 0.029999999329447746
-        Value: Lines
-      Name: Grid
-      Normal Cell Count: 0
-      Offset:
-        X: 0
-        Y: 0
-        Z: 0
-      Plane: XY
-      Plane Cell Count: 40
-      Reference Frame: <Fixed Frame>
-      Value: true
-
-    # ===== TF =====
-    - Class: rviz/TF
+    # --------------------------------------------------
+    # 1) TF
+    # --------------------------------------------------
+    - Class: rviz_default_plugins/TF
       Enabled: true
       Frame Timeout: 15
       Frames:
-        All Enabled: false
-        base_link:
+        All Enabled: true
+        body:
           Value: true
-        map:
-          Value: true
-        odom:
+        camera_init:
           Value: true
       Marker Scale: 1
       Name: TF
       Show Arrows: true
       Show Axes: true
-      Show Names: true
+      Show Names: false
       Tree:
-        map:
-          odom:
-            base_link:
-              {}
+        camera_init:
+          body:
+            {}
       Update Interval: 0
       Value: true
 
-    # ===== Odometry (from LIO) =====
-    - Class: rviz/Group
-      Displays:
-        - Angle Tolerance: 0.009999999776482582
-          Class: rviz/Odometry
-          Covariance:
-            Orientation:
-              Alpha: 0.5
-              Color: 255; 255; 127
-              Color Style: Unique
-              Frame: Local
-              Offset: 1
-              Scale: 1
-              Value: true
-            Position:
-              Alpha: 0.30000001192092896
-              Color: 204; 51; 204
-              Scale: 1
-              Value: true
-            Value: true
-          Enabled: true
-          Keep: 1
-          Name: LIO Odometry
-          Position Tolerance: 0.0010000000474974513
-          Shape:
-            Alpha: 1
-            Axes Length: 1
-            Axes Radius: 0.10000000149011612
-            Color: 255; 85; 0
-            Head Length: 0
-            Head Radius: 0
-            Shaft Length: 0.05000000074505806
-            Shaft Radius: 0.05000000074505806
-            Value: Axes
-          Topic: /Odometry
-          Unreliable: false
+    # --------------------------------------------------
+    # 2) Odometry (토픽: /Odometry)
+    # --------------------------------------------------
+    - Angle Tolerance: 0.10000000149011612
+      Class: rviz_default_plugins/Odometry
+      Covariance:
+        Orientation:
+          Alpha: 0.5
+          Color: 255; 255; 127
+          Color Style: Unique
+          Frame: Local
+          Offset: 1
+          Scale: 1
           Value: true
+        Position:
+          Alpha: 0.30000001192092896
+          Color: 204; 51; 204
+          Scale: 1
+          Value: true
+        Value: true
       Enabled: true
+      Keep: 100
       Name: Odometry
-
-    # ===== Pointclouds =====
-    - Class: rviz/Group
-      Displays:
-
-        # LIO에서 publish하는 /cloud_registered
-        - Alpha: 1
-          Autocompute Intensity Bounds: true
-          Autocompute Value Bounds:
-            Max Value: 10
-            Min Value: -10
-            Value: true
-          Axis: Z
-          Channel Name: intensity
-          Class: rviz/PointCloud2
-          Color: 238; 238; 236
-          Color Transformer: Intensity
-          Decay Time: 0
-          Enabled: true
-          Invert Rainbow: false
-          Max Color: 255; 255; 255
-          Min Color: 238; 238; 236
-          Name: LIO Cloud
-          Position Transformer: XYZ
-          Queue Size: 1
-          Selectable: false
-          Size (Pixels): 3
-          Size (m): 0.05000000074505806
-          Style: Points
-          Topic: /cloud_registered
-          Unreliable: false
-          Use Fixed Frame: true
-          Use rainbow: true
-          Value: true
-
-        # Relocalization에서 publish하는 /tar_points
-        - Alpha: 1
-          Autocompute Intensity Bounds: true
-          Autocompute Value Bounds:
-            Max Value: 10
-            Min Value: -10
-            Value: true
-          Axis: Z
-          Channel Name: intensity
-          Class: rviz/PointCloud2
-          Color: 252; 175; 62
-          Color Transformer: FlatColor
-          Decay Time: 0
-          Enabled: true
-          Invert Rainbow: false
-          Max Color: 255; 255; 255
-          Min Color: 0; 0; 0
-          Name: Target Map
-          Position Transformer: XYZ
-          Queue Size: 10
-          Selectable: true
-          Size (Pixels): 3
-          Size (m): 0.03999999910593033
-          Style: Flat Squares
-          Topic: /tar_points
-          Unreliable: false
-          Use Fixed Frame: true
-          Use rainbow: true
-          Value: true
-
-        # Relocalization에서 publish하는 /src_points_on_global_pose
-        - Alpha: 1
-          Autocompute Intensity Bounds: true
-          Autocompute Value Bounds:
-            Max Value: 10
-            Min Value: -10
-            Value: true
-          Axis: Z
-          Channel Name: intensity
-          Class: rviz/PointCloud2
-          Color: 114; 159; 207
-          Color Transformer: FlatColor
-          Decay Time: 0
-          Enabled: true
-          Invert Rainbow: false
-          Max Color: 255; 255; 255
-          Min Color: 0; 0; 0
-          Name: Aligned Source
-          Position Transformer: XYZ
-          Queue Size: 10
-          Selectable: true
-          Size (Pixels): 3
-          Size (m): 0.05000000074505806
-          Style: Flat Squares
-          Topic: /src_points_on_global_pose
-          Unreliable: false
-          Use Fixed Frame: true
-          Use rainbow: true
-          Value: true
-
-      Enabled: true
-      Name: Pointclouds
-
-    # ===== Global Pose (PoseStamped) =====
-    - Alpha: 1
-      Axes Length: 1.5
-      Axes Radius: 0.20000000298023224
-      Class: rviz/Pose
-      Color: 255; 25; 0
-      Enabled: true
-      Head Length: 0.30000001192092896
-      Head Radius: 0.10000000149011612
-      Name: Global Pose
-      Shaft Length: 1
-      Shaft Radius: 0.05000000074505806
-      Shape: Axes
-      Topic: /global_pose
-      Unreliable: false
+      Position Tolerance: 0.10000000149011612
+      Shape:
+        Alpha: 1
+        Axes Length: 1
+        Axes Radius: 0.10000000149011612
+        Color: 255; 25; 0
+        Head Length: 0.30000001192092896
+        Head Radius: 0.10000000149011612
+        Shaft Length: 1
+        Shaft Radius: 0.05000000074505806
+        Value: Arrow
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /Odometry
       Value: true
 
-    # ===== Relocalization Info (Text Panel) =====
-    - Class: rviz/Group
-      Displays:
-        # 점수( /score 토픽 ) 표시
-        - Class: rviz/TextPanel
-          Enabled: true
-          Name: Reloc Score
-          Text: Relocalization Score: N/A
-          Topic: /score
-          Update Topic: /score
-          Value: true
-
-        # 시간( /time 토픽 ) 표시
-        - Class: rviz/TextPanel
-          Enabled: true
-          Name: Reloc Time
-          Text: Relocalization Time: N/A ms
-          Topic: /time
-          Update Topic: /time
-          Value: true
+    # --------------------------------------------------
+    # 3) Path (토픽: /path)
+    # --------------------------------------------------
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz_default_plugins/Path
+      Color: 25; 255; 0
       Enabled: true
-      Name: Relocalization Info
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.029999999329447746
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /path
+      Value: true
+
+    # --------------------------------------------------
+    # 4) CloudRegistered (토픽: /cloud_registered)
+    # --------------------------------------------------
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 11.062739372253418
+        Min Value: -13.864188194274902
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz_default_plugins/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: AxisColor
+      Decay Time: 30
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 186
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: CloudRegistered
+      Position Transformer: XYZ
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.05000000074505806
+      Style: Flat Squares
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /cloud_registered
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
+
+    # --------------------------------------------------
+    # 5) CloudEffected (토픽: /cloud_effected)
+    # --------------------------------------------------
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz_default_plugins/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 184
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: CloudEffected
+      Position Transformer: XYZ
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.10000000149011612
+      Style: Flat Squares
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /cloud_effected
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
+
+    # --------------------------------------------------
+    # 6) CloudMap (토픽: /Laser_map)
+    # --------------------------------------------------
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: -9999
+        Min Value: 9999
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz_default_plugins/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: AxisColor
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 255
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: CloudMap
+      Position Transformer: XYZ
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.05000000074505806
+      Style: Flat Squares
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /Laser_map
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
+
+    # --------------------------------------------------
+    # ------------------ 추가된 부분 --------------------
+    # 7) /tar_points
+    # --------------------------------------------------
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz_default_plugins/PointCloud2
+      Color: 255; 255; 0
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Min Color: 0; 0; 0
+      Name: CloudTarPoints
+      Position Transformer: XYZ
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.10000000149011612
+      Style: Flat Squares
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /tar_points
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
+
+    # 8) /src_points_on_global_pose
+    # --------------------------------------------------
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz_default_plugins/PointCloud2
+      Color: 114; 159; 207
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Min Color: 0; 0; 0
+      Name: CloudAlignedSource
+      Position Transformer: XYZ
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.10000000149011612
+      Style: Flat Squares
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /src_points_on_global_pose
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
+
+    # 9) /global_pose (PoseStamped)
+    # --------------------------------------------------
+    - Alpha: 1
+      Class: rviz_default_plugins/Pose
+      Enabled: true
+      Head Length: 0.3
+      Head Radius: 0.1
+      Name: GlobalPose
+      Shaft Length: 1
+      Shaft Radius: 0.05
+      Shape: Arrow
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /global_pose
+      Value: true
 
   Enabled: true
-
   Global Options:
-    Background Color: 48; 48; 48
-    Default Light: true
-    Fixed Frame: map  # 최상위 프레임
+    Background Color: 0; 0; 0
+    Fixed Frame: camera_init
     Frame Rate: 30
   Name: root
 
   Tools:
-    - Class: rviz/Interact
+    - Class: rviz_default_plugins/Interact
       Hide Inactive Objects: true
-    - Class: rviz/MoveCamera
-    - Class: rviz/Select
-    - Class: rviz/FocusCamera
-    - Class: rviz/Measure
-    - Class: rviz/SetInitialPose
-      Theta std deviation: 0.2617993950843811
-      Topic: /initialpose
-      X std deviation: 0.5
-      Y std deviation: 0.5
-    - Class: rviz/SetGoal
-      Topic: /move_base_simple/goal
-    - Class: rviz/PublishPoint
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/FocusCamera
+    - Class: rviz_default_plugins/Measure
+      Line color: 128; 128; 0
+    - Class: rviz_default_plugins/SetInitialPose
+      Covariance x: 0.25
+      Covariance y: 0.25
+      Covariance yaw: 0.06853891909122467
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /initialpose
+    - Class: rviz_default_plugins/SetGoal
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /goal_pose
+    - Class: rviz_default_plugins/PublishPoint
       Single click: true
-      Topic: /clicked_point
-  Value: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /clicked_point
 
+  Transformation:
+    Current:
+      Class: rviz_default_plugins/TF
+  Value: true
   Views:
     Current:
-      Class: rviz/Orbit
-      Distance: 20.0
+      Class: rviz_default_plugins/Orbit
+      Distance: 216.99887084960938
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.0
-        Y: 0.0
-        Z: 0.0
+        X: -0.008504047989845276
+        Y: -0.0005770106799900532
+        Z: 0.034441977739334106
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.785398006439209
-      Target Frame: map
-      Value: Orbit (rviz)
-      Yaw: 0.785398006439209
+      Pitch: 1.5697963237762451
+      Target Frame: <Fixed Frame>
+      Value: Orbit (rviz_default_plugins)
+      Yaw: 4.88355827331543
     Saved: ~
 
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 1028
+  Height: 846
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd000000...
+  QMainWindow State: 000000ff00000000fd0000000400000000...
   Selection:
     collapsed: false
   Time:
@@ -331,6 +419,6 @@ Window Geometry:
     collapsed: false
   Views:
     collapsed: false
-  Width: 1567
-  X: 67
-  Y: 24
+  Width: 1453
+  X: 368
+  Y: 104
