@@ -85,10 +85,6 @@ private:
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
   rclcpp::TimerBase::SharedPtr timer_;
 
-  double filter_size_corner_min;
-  double filter_size_surf_min;
-  double filter_size_map_min;
-
   // Reloc action
   using GetRelocPose = relocalization_bbs3d::action::GetRelocalizationPose;
   using GetRelocPoseClient = rclcpp_action::Client<GetRelocPose>;
