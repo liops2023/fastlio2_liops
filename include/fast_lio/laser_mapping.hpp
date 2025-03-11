@@ -73,6 +73,9 @@ private:
   void request_relocalization();
   void relocalization_response_callback(
     const rclcpp_action::ClientGoalHandle<relocalization_bbs3d::action::GetRelocalizationPose>::WrappedResult &result);
+  
+  // map->odom 변환 정보를 PoseStamped 메시지 형태로 구독하는 콜백 함수
+  void map_to_odom_pose_cb(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
 
   // ROS 멤버
   rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Odometry>::SharedPtr pubOdomAftMapped_;
@@ -113,9 +116,20 @@ private:
   std::atomic<bool> reloc_stop_flag_{false}; // stop 여부
   double reloc_score_threshold_ = 100.0;     // 점수 임계치
   int reloc_timeout_sec_ = 300;             // 최대 재시도 시간(초)
-  
+  bool enable_relocalization_ = true;
+
   void start_reloc_retry_loop(); // 재시도 루프 시작 함수
   void reloc_retry_loop();       // 스레드 내에서 동작할 실제 루프
+
+  std::string map_frame_id_;
+  std::string odom_frame_id_;
+  std::string sensor_frame_id_;
+  
+  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr sub_map_to_odom_pose_;
+  std::mutex map_to_odom_mtx_;
+  geometry_msgs::msg::Transform map_to_odom_; // Relocalization 으로 획득한 값 저장
+  bool have_map_to_odom_{false}; // map -> odom 값을 갖고 있는 지 여부
+  
 };
 
 #endif  // FAST_LIO__LASER_MAPPING_HPP_

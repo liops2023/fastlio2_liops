@@ -8,6 +8,7 @@
         cube_side_length: 1000.0
         runtime_pos_log_enable: false
         map_file_path: "./test.pcd"
+        enable_relocalization: true
 
         common:
             lid_topic:  "/livox/lidar_192_168_1_156"
@@ -34,7 +35,7 @@
             extrinsic_T: [ 0.0, 0.0, 0.0 ]
             extrinsic_R: [ 1., 0., 0.,
                             0., 1., 0.,
-                            0., 0., 1.]
+                            0., 0., 1.] 
 
         publish:
             path_en: true                # true: publish Path
@@ -50,3 +51,8 @@
             pcd_save_en: true
             interval: -1                 # how many LiDAR frames saved in each pcd file; 
                                         # -1 : all frames will be saved in ONE pcd file, may lead to memory crash when having too much frames.
+
+        tf:
+            map_frame_id: "map"
+            odom_frame_id: "odom"
+            sensor_frame_id: "base_link"
