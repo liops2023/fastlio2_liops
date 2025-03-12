@@ -613,11 +613,11 @@ namespace
 // LaserMappingLifecycleNode 구현
 //------------------------------------------------------------------------------
 LaserMappingLifecycleNode::LaserMappingLifecycleNode(const rclcpp::NodeOptions &options)
-    : nav2_util::LifecycleNode("laser_mapping_lifecycle_node", "", options)
+  : nav2_util::LifecycleNode("laser_mapping_lifecycle_node", "", options)
 {
   RCLCPP_INFO(this->get_logger(), "Constructing LaserMappingLifecycleNode...");
 
-  // declare params
+  // [MOD 3] declare params
   this->declare_parameter<bool>("publish.path_en", true);
   this->declare_parameter<bool>("publish.scan_publish_en", true);
   this->declare_parameter<bool>("publish.dense_publish_en", true);
@@ -676,7 +676,7 @@ LaserMappingLifecycleNode::on_configure(const rclcpp_lifecycle::State &)
 {
   RCLCPP_INFO(get_logger(), "[on_configure]...");
 
-  // 로드
+  // 파라미터 로드
   path_en_ = this->get_parameter("publish.path_en").as_bool();
   scan_pub_en = this->get_parameter("publish.scan_publish_en").as_bool();
   dense_pub_en = this->get_parameter("publish.dense_publish_en").as_bool();
@@ -697,38 +697,38 @@ LaserMappingLifecycleNode::on_configure(const rclcpp_lifecycle::State &)
   time_diff_lidar_to_imu = this->get_parameter("common.time_offset_lidar_to_imu").as_double();
 
   filter_size_corner_min = this->get_parameter("filter_size_corner").as_double();
-  filter_size_surf_min = this->get_parameter("filter_size_surf").as_double();
-  filter_size_map_min = this->get_parameter("filter_size_map").as_double();
-  cube_len = this->get_parameter("cube_side_length").as_double();
+  filter_size_surf_min   = this->get_parameter("filter_size_surf").as_double();
+  filter_size_map_min    = this->get_parameter("filter_size_map").as_double();
+  cube_len               = this->get_parameter("cube_side_length").as_double();
 
   DET_RANGE = this->get_parameter("mapping.det_range").as_double();
-  fov_deg = this->get_parameter("mapping.fov_degree").as_double();
-  gyr_cov = this->get_parameter("mapping.gyr_cov").as_double();
-  acc_cov = this->get_parameter("mapping.acc_cov").as_double();
+  fov_deg   = this->get_parameter("mapping.fov_degree").as_double();
+  gyr_cov   = this->get_parameter("mapping.gyr_cov").as_double();
+  acc_cov   = this->get_parameter("mapping.acc_cov").as_double();
   b_gyr_cov = this->get_parameter("mapping.b_gyr_cov").as_double();
   b_acc_cov = this->get_parameter("mapping.b_acc_cov").as_double();
 
-  p_pre->blind = this->get_parameter("preprocess.blind").as_double();
-  p_pre->lidar_type = this->get_parameter("preprocess.lidar_type").as_int();
-  p_pre->N_SCANS = this->get_parameter("preprocess.scan_line").as_int();
-  p_pre->time_unit = this->get_parameter("preprocess.timestamp_unit").as_int();
-  p_pre->SCAN_RATE = this->get_parameter("preprocess.scan_rate").as_int();
+  p_pre->blind          = this->get_parameter("preprocess.blind").as_double();
+  p_pre->lidar_type     = this->get_parameter("preprocess.lidar_type").as_int();
+  p_pre->N_SCANS        = this->get_parameter("preprocess.scan_line").as_int();
+  p_pre->time_unit      = this->get_parameter("preprocess.timestamp_unit").as_int();
+  p_pre->SCAN_RATE      = this->get_parameter("preprocess.scan_rate").as_int();
   p_pre->point_filter_num = this->get_parameter("point_filter_num").as_int();
-  p_pre->feature_enabled = this->get_parameter("feature_extract_enable").as_bool();
+  p_pre->feature_enabled  = this->get_parameter("feature_extract_enable").as_bool();
 
-  runtime_pos_log = this->get_parameter("runtime_pos_log_enable").as_bool();
-  extrinsic_est_en = this->get_parameter("mapping.extrinsic_est_en").as_bool();
+  runtime_pos_log   = this->get_parameter("runtime_pos_log_enable").as_bool();
+  extrinsic_est_en  = this->get_parameter("mapping.extrinsic_est_en").as_bool();
 
   std::vector<double> extrinT = this->get_parameter("mapping.extrinsic_T").as_double_array();
   std::vector<double> extrinR = this->get_parameter("mapping.extrinsic_R").as_double_array();
 
   reloc_score_threshold_ = this->get_parameter("relocalization_score_threshold").as_double();
-  reloc_timeout_sec_ = this->get_parameter("relocalization_retry_timeout_sec").as_int();
-
+  reloc_timeout_sec_     = this->get_parameter("relocalization_retry_timeout_sec").as_int();
   enable_relocalization_ = this->get_parameter("enable_relocalization").as_bool();
+
   RCLCPP_INFO(get_logger(), "enable_relocalization -> %s", enable_relocalization_ ? "true" : "false");
 
-  // 전역 초기화
+  // [MOD 3] 전역 초기화 (on_configure마다)
   flg_exit = false;
   flg_first_scan = true;
   is_first_lidar = true;
@@ -740,23 +740,25 @@ LaserMappingLifecycleNode::on_configure(const rclcpp_lifecycle::State &)
   flg_EKF_inited = false;
 
   FOV_DEG = (fov_deg + 10.0 > 179.9) ? 179.9 : (fov_deg + 10.0);
-  HALF_FOV_COS = std::cos(FOV_DEG * 0.5 * PI_M / 180.0);
+  HALF_FOV_COS = std::cos(FOV_DEG*0.5*PI_M/180.0);
 
   std::memset(point_selected_surf, true, sizeof(point_selected_surf));
   std::memset(res_last, -1000.0f, sizeof(res_last));
 
-  downSizeFilterSurf.setLeafSize(filter_size_surf_min, filter_size_surf_min, filter_size_surf_min);
-  downSizeFilterMap.setLeafSize(filter_size_map_min, filter_size_map_min, filter_size_map_min);
+  downSizeFilterSurf.setLeafSize(filter_size_surf_min,
+                                 filter_size_surf_min,
+                                 filter_size_surf_min);
+  downSizeFilterMap.setLeafSize(filter_size_map_min,
+                                filter_size_map_min,
+                                filter_size_map_min);
 
-  // IMU Extrinsic
-  if (extrinT.size() == 3 && extrinR.size() == 9)
-  {
+  // [MOD 3] IMU Extrinsic
+  if (extrinT.size()==3 && extrinR.size()==9) {
     V3D Lidar_T_wrt_IMU(extrinT[0], extrinT[1], extrinT[2]);
     M3D Lidar_R_wrt_IMU;
     Lidar_R_wrt_IMU << extrinR[0], extrinR[1], extrinR[2],
-        extrinR[3], extrinR[4], extrinR[5],
-        extrinR[6], extrinR[7], extrinR[8];
-
+                       extrinR[3], extrinR[4], extrinR[5],
+                       extrinR[6], extrinR[7], extrinR[8];
     p_imu->set_extrinsic(Lidar_T_wrt_IMU, Lidar_R_wrt_IMU);
   }
   p_imu->set_gyr_cov(V3D(gyr_cov, gyr_cov, gyr_cov));
@@ -765,55 +767,59 @@ LaserMappingLifecycleNode::on_configure(const rclcpp_lifecycle::State &)
   p_imu->set_acc_bias_cov(V3D(b_acc_cov, b_acc_cov, b_acc_cov));
 
   // ESKF init
-  for (int i = 0; i < 23; i++)
+  for (int i=0; i<23; i++)
     epsi_[i] = 0.001;
   kf.init_dyn_share(get_f, df_dx, df_dw, h_share_model, max_iter, epsi_);
 
-  // pos_log 파일
-  pos_log_fp_ = std::fopen((std::string(ROOT_DIR) + "/Log/pos_log.txt").c_str(), "w");
-  fout_pre_.open(std::string(ROOT_DIR) + "/Log/mat_pre.txt", std::ios::out);
-  fout_out_.open(std::string(ROOT_DIR) + "/Log/mat_out.txt", std::ios::out);
-  fout_dbg_.open(std::string(ROOT_DIR) + "/Log/dbg.txt", std::ios::out);
+  // [MOD 3] pos_log 파일 열기
+  pos_log_fp_ = std::fopen((std::string(ROOT_DIR)+"/Log/pos_log.txt").c_str(), "w");
+  fout_pre_.open(std::string(ROOT_DIR)+"/Log/mat_pre.txt", std::ios::out);
+  fout_out_.open(std::string(ROOT_DIR)+"/Log/mat_out.txt", std::ios::out);
+  fout_dbg_.open(std::string(ROOT_DIR)+"/Log/dbg.txt", std::ios::out);
 
   // publisher
   pubOdomAftMapped_ = this->create_publisher<nav_msgs::msg::Odometry>(
-      "/Odometry", rclcpp::QoS(20));
-  tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this->shared_from_this());
+    "/Odometry", rclcpp::QoS(20)
+  );
+  tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(
+    this->shared_from_this()
+  );
 
   // subscription
-  if (p_pre->lidar_type == AVIA)
-  {
+  if (p_pre->lidar_type==AVIA) {
     sub_pcl_livox_ = this->create_subscription<livox_ros_driver2::msg::CustomMsg>(
-        lid_topic, 10, livox_pcl_cbk);
+      lid_topic, 10, livox_pcl_cbk
+    );
     RCLCPP_INFO(get_logger(), "[on_configure] Subscribed(Livox) -> %s", lid_topic.c_str());
-  }
-  else
-  {
+  } else {
     sub_pcl_pc_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-        lid_topic, rclcpp::SensorDataQoS(), standard_pcl_cbk);
+      lid_topic, rclcpp::SensorDataQoS(), standard_pcl_cbk
+    );
     RCLCPP_INFO(get_logger(), "[on_configure] Subscribed(StdPC2) -> %s", lid_topic.c_str());
   }
+
   sub_imu_ = this->create_subscription<sensor_msgs::msg::Imu>(
-      imu_topic, 50, imu_cbk);
+    imu_topic, 50, imu_cbk
+  );
 
-  // Reloc action 클라이언트
-
+  // [MOD 2] Reloc action 클라이언트
   if (enable_relocalization_)
   {
     reloc_action_client_ = rclcpp_action::create_client<GetRelocPose>(
-        this->get_node_base_interface(),
-        this->get_node_graph_interface(),
-        this->get_node_logging_interface(),
-        this->get_node_waitables_interface(),
-        "get_relocalization_pose");
+      this->get_node_base_interface(),
+      this->get_node_graph_interface(),
+      this->get_node_logging_interface(),
+      this->get_node_waitables_interface(),
+      "get_relocalization_pose"
+    );
   }
 
+  // [MOD 2] map->odom pose 구독
   sub_map_to_odom_pose_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
-    "/map_to_odom_pose",   // 원하는 토픽 이름
-    10,                    // queue size
-    std::bind(&LaserMappingLifecycleNode::map_to_odom_pose_cb, 
-              this, 
-              std::placeholders::_1));
+    "/map_to_odom_pose",
+    10,
+    std::bind(&LaserMappingLifecycleNode::map_to_odom_pose_cb, this, std::placeholders::_1)
+  );
 
   RCLCPP_INFO(get_logger(), "[on_configure] done. Ready to activate.");
   return nav2_util::CallbackReturn::SUCCESS;
@@ -823,55 +829,55 @@ nav2_util::CallbackReturn
 LaserMappingLifecycleNode::on_activate(const rclcpp_lifecycle::State &)
 {
   RCLCPP_INFO(get_logger(), "[on_activate]...");
+
   pubOdomAftMapped_->on_activate();
 
   if (enable_relocalization_)
   {
-    if (!reloc_action_client_->wait_for_action_server(std::chrono::seconds(100)))
-    {
+    if (!reloc_action_client_->wait_for_action_server(std::chrono::seconds(100))) {
       RCLCPP_ERROR(get_logger(), "Relocalization action server not ready...");
       return nav2_util::CallbackReturn::FAILURE;
-    }
-    else
-    {
-      // === [변경] ===
-      // 별도 스레드에서, 특정 조건(점수 부족, 응답 없음 등)에 대한 재시도를 5분간 진행
+    } else {
+      // [MOD 2] 별도 스레드에서 re-loc 재시도
       start_reloc_retry_loop();
     }
   }
 
-  if (cloud_registered_en_)
-  {
+  if (cloud_registered_en_) {
     pubCloudRegistered_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-        cloud_registered_topic_, rclcpp::QoS(10));
+      cloud_registered_topic_, rclcpp::QoS(10)
+    );
     pubCloudRegistered_->on_activate();
     RCLCPP_INFO(get_logger(), "cloud_registered -> %s", cloud_registered_topic_.c_str());
   }
 
-  // 타이머
+  // [MOD 3] 타이머 생성
   auto period_ms = std::chrono::milliseconds((int)(1000.0 / 100.0)); // 100Hz
   timer_ = this->create_wall_timer(
-      period_ms,
-      std::bind(&LaserMappingLifecycleNode::timer_callback, this));
+    period_ms,
+    std::bind(&LaserMappingLifecycleNode::timer_callback, this)
+  );
 
   RCLCPP_INFO(get_logger(), "[on_activate] -> ACTIVE");
   return nav2_util::CallbackReturn::SUCCESS;
 }
 
+
 nav2_util::CallbackReturn
 LaserMappingLifecycleNode::on_deactivate(const rclcpp_lifecycle::State &)
 {
   RCLCPP_INFO(get_logger(), "[on_deactivate]...");
-  if (timer_)
-  {
+
+  if (timer_) {
     timer_->cancel();
     timer_.reset();
   }
-  if (pubCloudRegistered_)
-  {
+
+  if (pubCloudRegistered_) {
     pubCloudRegistered_->on_deactivate();
   }
   pubOdomAftMapped_->on_deactivate();
+
   RCLCPP_INFO(get_logger(), "[on_deactivate] done->INACTIVE.");
   return nav2_util::CallbackReturn::SUCCESS;
 }
@@ -881,11 +887,11 @@ LaserMappingLifecycleNode::on_cleanup(const rclcpp_lifecycle::State &)
 {
   RCLCPP_INFO(get_logger(), "[on_cleanup]...");
 
-  if (timer_)
-  {
+  if (timer_) {
     timer_->cancel();
     timer_.reset();
   }
+
   pubOdomAftMapped_.reset();
   pubCloudRegistered_.reset();
   sub_imu_.reset();
@@ -893,17 +899,14 @@ LaserMappingLifecycleNode::on_cleanup(const rclcpp_lifecycle::State &)
   sub_pcl_livox_.reset();
   tf_broadcaster_.reset();
 
-  if (pos_log_fp_)
-  {
+  // [MOD 3] 파일 close
+  if (pos_log_fp_) {
     std::fclose(pos_log_fp_);
     pos_log_fp_ = nullptr;
   }
-  if (fout_pre_.is_open())
-    fout_pre_.close();
-  if (fout_out_.is_open())
-    fout_out_.close();
-  if (fout_dbg_.is_open())
-    fout_dbg_.close();
+  if (fout_pre_.is_open()) { fout_pre_.close(); }
+  if (fout_out_.is_open()) { fout_out_.close(); }
+  if (fout_dbg_.is_open()) { fout_dbg_.close(); }
 
   // 전역 리셋
   flg_exit = false;
@@ -924,17 +927,14 @@ nav2_util::CallbackReturn
 LaserMappingLifecycleNode::on_shutdown(const rclcpp_lifecycle::State &)
 {
   RCLCPP_INFO(get_logger(), "[on_shutdown]...");
-  if (pos_log_fp_)
-  {
+
+  if (pos_log_fp_) {
     std::fclose(pos_log_fp_);
     pos_log_fp_ = nullptr;
   }
-  if (fout_pre_.is_open())
-    fout_pre_.close();
-  if (fout_out_.is_open())
-    fout_out_.close();
-  if (fout_dbg_.is_open())
-    fout_dbg_.close();
+  if (fout_pre_.is_open()) { fout_pre_.close(); }
+  if (fout_out_.is_open()) { fout_out_.close(); }
+  if (fout_dbg_.is_open()) { fout_dbg_.close(); }
 
   return nav2_util::CallbackReturn::SUCCESS;
 }
@@ -942,16 +942,15 @@ LaserMappingLifecycleNode::on_shutdown(const rclcpp_lifecycle::State &)
 // 메인 루프(timer)
 void LaserMappingLifecycleNode::timer_callback()
 {
-  // 패키지 동기화
-  if (!sync_packages(Measures))
+  if (!sync_packages(Measures)) {
     return;
+  }
 
-  // 첫 스캔이면 초기화
-  if (flg_first_scan)
-  {
-    first_lidar_time = Measures.lidar_beg_time;
+  // 첫 스캔
+  if (flg_first_scan) {
+    first_lidar_time      = Measures.lidar_beg_time;
     p_imu->first_lidar_time = first_lidar_time;
-    flg_first_scan = false;
+    flg_first_scan        = false;
     RCLCPP_INFO(get_logger(), "[timer_callback] First scan -> start alignment!");
     return;
   }
@@ -965,17 +964,15 @@ void LaserMappingLifecycleNode::timer_callback()
   // IMU 처리
   p_imu->Process(Measures, kf, feats_undistort);
   state_point = kf.get_x();
-  pos_lid = state_point.pos + state_point.rot * state_point.offset_T_L_I;
+  pos_lid = state_point.pos + state_point.rot*state_point.offset_T_L_I;
 
-  if (feats_undistort->empty())
-  {
+  if (feats_undistort->empty()) {
     RCLCPP_WARN(get_logger(), "[timer_callback] Empty feats_undistort!");
     return;
   }
 
-  flg_EKF_inited = ((Measures.lidar_beg_time - first_lidar_time) < INIT_TIME) ? false : true;
+  flg_EKF_inited = ((Measures.lidar_beg_time - first_lidar_time)<INIT_TIME)? false:true;
 
-  // localmap
   lasermap_fov_segment();
 
   // 다운샘플
@@ -983,14 +980,11 @@ void LaserMappingLifecycleNode::timer_callback()
   downSizeFilterSurf.filter(*feats_down_body);
   feats_down_size = feats_down_body->points.size();
 
-  if (!ikdtree.Root_Node)
-  {
-    if (feats_down_size > 5)
-    {
+  if (!ikdtree.Root_Node) {
+    if (feats_down_size>5) {
       ikdtree.set_downsample_param(filter_size_map_min);
       feats_down_world->resize(feats_down_size);
-      for (int i = 0; i < feats_down_size; i++)
-      {
+      for (int i=0; i<feats_down_size; i++) {
         pointBodyToWorld(&(feats_down_body->points[i]), &(feats_down_world->points[i]));
       }
       ikdtree.Build(feats_down_world->points);
@@ -1002,8 +996,7 @@ void LaserMappingLifecycleNode::timer_callback()
   int featsFromMapNum = ikdtree.validnum();
   kdtree_size_st = ikdtree.size();
 
-  if (feats_down_size < 5)
-  {
+  if (feats_down_size<5) {
     RCLCPP_WARN(get_logger(), "[timer_callback] Too few features, skip scan");
     return;
   }
@@ -1019,7 +1012,7 @@ void LaserMappingLifecycleNode::timer_callback()
 
   state_point = kf.get_x();
   euler_cur = SO3ToEuler(state_point.rot);
-  pos_lid = state_point.pos + state_point.rot * state_point.offset_T_L_I;
+  pos_lid = state_point.pos + state_point.rot*state_point.offset_T_L_I;
 
   geoQuat.x = state_point.rot.x();
   geoQuat.y = state_point.rot.y();
@@ -1028,8 +1021,7 @@ void LaserMappingLifecycleNode::timer_callback()
 
   map_incremental();
 
-  if (cloud_registered_en_ && pubCloudRegistered_)
-  {
+  if (cloud_registered_en_ && pubCloudRegistered_) {
     publish_cloud_registered();
   }
   publish_odometry();
@@ -1038,13 +1030,11 @@ void LaserMappingLifecycleNode::timer_callback()
   double total_time = t5 - t0;
 
   // runtime log
-  if (runtime_pos_log)
-  {
+  if (runtime_pos_log) {
     frame_num_++;
     kdtree_size_end = ikdtree.size();
 
-    if (fout_pre_.good())
-    {
+    if (fout_pre_.good()) {
       double t = Measures.lidar_beg_time - first_lidar_time;
       V3D ext_euler = SO3ToEuler(state_point.offset_R_L_I);
       fout_pre_ << std::setw(20) << t
@@ -1060,12 +1050,10 @@ void LaserMappingLifecycleNode::timer_callback()
                 << feats_undistort->points.size()
                 << std::endl;
     }
-    if (pos_log_fp_)
-    {
+    if (pos_log_fp_) {
       dump_lio_state_to_log(pos_log_fp_);
     }
-    if (fout_out_.good())
-    {
+    if (fout_out_.good()) {
       double t = Measures.lidar_beg_time - first_lidar_time;
       V3D ext_euler = SO3ToEuler(state_point.offset_R_L_I);
       fout_out_ << std::setw(20) << t
@@ -1087,28 +1075,28 @@ void LaserMappingLifecycleNode::timer_callback()
 void LaserMappingLifecycleNode::publish_cloud_registered()
 {
   auto cloud_size = feats_undistort->points.size();
-  if (cloud_size == 0)
-    return;
+  if (cloud_size==0) return;
 
   PointCloudXYZI::Ptr cloud_odom(new PointCloudXYZI());
   cloud_odom->resize(cloud_size);
 
-  for (size_t i = 0; i < cloud_size; i++)
-  {
+  for (size_t i=0; i<cloud_size; i++) {
     const auto &pt_in = feats_undistort->points[i];
     auto &pt_out = cloud_odom->points[i];
 
     V3D p_body(pt_in.x, pt_in.y, pt_in.z);
-    V3D p_global = state_point.rot * (state_point.offset_R_L_I * p_body + state_point.offset_T_L_I) + state_point.pos;
+    V3D p_global = state_point.rot * (state_point.offset_R_L_I * p_body + state_point.offset_T_L_I)
+                                     + state_point.pos;
     pt_out.x = p_global(0);
     pt_out.y = p_global(1);
     pt_out.z = p_global(2);
     pt_out.intensity = pt_in.intensity;
-    pt_out.curvature = pt_in.curvature; // 그대로 보존
+    pt_out.curvature = pt_in.curvature;
   }
+
   sensor_msgs::msg::PointCloud2 cloud_msg;
   pcl::toROSMsg(*cloud_odom, cloud_msg);
-  cloud_msg.header.stamp = to_ros_time(lidar_end_time);
+  cloud_msg.header.stamp    = to_ros_time(lidar_end_time);
   cloud_msg.header.frame_id = odom_frame_id_;
 
   pubCloudRegistered_->publish(cloud_msg);
@@ -1117,8 +1105,8 @@ void LaserMappingLifecycleNode::publish_cloud_registered()
 void LaserMappingLifecycleNode::publish_odometry()
 {
   odomAftMapped.header.frame_id = odom_frame_id_;
-  odomAftMapped.child_frame_id = sensor_frame_id_;
-  odomAftMapped.header.stamp = to_ros_time(lidar_end_time);
+  odomAftMapped.child_frame_id  = sensor_frame_id_;
+  odomAftMapped.header.stamp    = to_ros_time(lidar_end_time);
 
   odomAftMapped.pose.pose.position.x = state_point.pos(0);
   odomAftMapped.pose.pose.position.y = state_point.pos(1);
@@ -1131,223 +1119,174 @@ void LaserMappingLifecycleNode::publish_odometry()
 
   // Cov
   auto P = kf.get_P();
-  for (int i = 0; i < 6; i++)
-  {
-    int k = (i < 3) ? i + 3 : i - 3;
-    odomAftMapped.pose.covariance[i * 6 + 0] = P(k, 3);
-    odomAftMapped.pose.covariance[i * 6 + 1] = P(k, 4);
-    odomAftMapped.pose.covariance[i * 6 + 2] = P(k, 5);
-    odomAftMapped.pose.covariance[i * 6 + 3] = P(k, 0);
-    odomAftMapped.pose.covariance[i * 6 + 4] = P(k, 1);
-    odomAftMapped.pose.covariance[i * 6 + 5] = P(k, 2);
+  for (int i=0; i<6; i++) {
+    int k = (i<3)? i+3 : i-3;
+    odomAftMapped.pose.covariance[i*6 + 0] = P(k,3);
+    odomAftMapped.pose.covariance[i*6 + 1] = P(k,4);
+    odomAftMapped.pose.covariance[i*6 + 2] = P(k,5);
+    odomAftMapped.pose.covariance[i*6 + 3] = P(k,0);
+    odomAftMapped.pose.covariance[i*6 + 4] = P(k,1);
+    odomAftMapped.pose.covariance[i*6 + 5] = P(k,2);
   }
-  // (2) odom -> sensor 변환 만들기
+
   geometry_msgs::msg::TransformStamped odom_to_sensor;
   odom_to_sensor.header.frame_id = odom_frame_id_;
   odom_to_sensor.child_frame_id  = sensor_frame_id_;
-  odom_to_sensor.header.stamp    = odomAftMapped.header.stamp; // 동일한 타임스탬프
-  odom_to_sensor.transform.translation.x = odomAftMapped.pose.pose.position.x;
-  odom_to_sensor.transform.translation.y = odomAftMapped.pose.pose.position.y;
-  odom_to_sensor.transform.translation.z = odomAftMapped.pose.pose.position.z;
+  odom_to_sensor.header.stamp    = odomAftMapped.header.stamp;
+  odom_to_sensor.transform.translation.x = state_point.pos(0);
+  odom_to_sensor.transform.translation.y = state_point.pos(1);
+  odom_to_sensor.transform.translation.z = state_point.pos(2);
   odom_to_sensor.transform.rotation      = odomAftMapped.pose.pose.orientation;
 
-  // (3) 필요하면 map->odom 변환도 함께 TF 발행
-  //     (have_map_to_odom_ == true 라면)
+  // map->odom 함께 TF 발행
   std::vector<geometry_msgs::msg::TransformStamped> tf_transforms;
   if (have_map_to_odom_) {
     geometry_msgs::msg::TransformStamped map_to_odom_tf;
     map_to_odom_tf.header.frame_id = map_frame_id_;
     map_to_odom_tf.child_frame_id  = odom_frame_id_;
-    map_to_odom_tf.header.stamp    = odomAftMapped.header.stamp; // 동일한 타임스탬프
-
+    map_to_odom_tf.header.stamp    = odomAftMapped.header.stamp;
     {
-      // mutex 잠금 후 map_to_odom_ 복사
       std::lock_guard<std::mutex> lock(map_to_odom_mtx_);
       map_to_odom_tf.transform = map_to_odom_;
     }
     tf_transforms.push_back(map_to_odom_tf);
   }
-
-  // (4) odom->sensor 변환은 항상 푸시
   tf_transforms.push_back(odom_to_sensor);
 
-  // (5) 한꺼번에 여러 transform 브로드캐스트
   tf_broadcaster_->sendTransform(tf_transforms);
 
-  // (6) odometry 퍼블리시 (ROS 토픽)
+  // odometry 토픽 발행
   pubOdomAftMapped_->publish(odomAftMapped);
 }
 
 void LaserMappingLifecycleNode::map_to_odom_pose_cb(const geometry_msgs::msg::PoseStamped::SharedPtr msg)
 {
-  // thread-safe하게 보호
   std::lock_guard<std::mutex> lock(map_to_odom_mtx_);
 
-  // Pose -> Transform 변환하여 보관
   map_to_odom_.translation.x = msg->pose.position.x;
   map_to_odom_.translation.y = msg->pose.position.y;
   map_to_odom_.translation.z = msg->pose.position.z;
-
-  map_to_odom_.rotation = msg->pose.orientation;
-
-  // 이 값을 이후 publish_odometry()에서 사용한다는 플래그
+  map_to_odom_.rotation      = msg->pose.orientation;
   have_map_to_odom_ = true;
 
   RCLCPP_INFO(
-    this->get_logger(), 
+    this->get_logger(),
     "[map_to_odom_pose_cb] Got new map->odom pose. (x=%.3f, y=%.3f, z=%.3f)",
-    msg->pose.position.x, 
-    msg->pose.position.y, 
-    msg->pose.position.z
+    msg->pose.position.x, msg->pose.position.y, msg->pose.position.z
   );
 }
 
 void LaserMappingLifecycleNode::start_reloc_retry_loop()
 {
-  // 혹시 이미 떠있는 스레드 있으면 중단
   reloc_stop_flag_ = false;
-  if (reloc_attempt_thread_.joinable())
-  {
+  if (reloc_attempt_thread_.joinable()) {
     reloc_attempt_thread_.join();
   }
-
-  // 실제 루프 함수 별도 실행
   reloc_attempt_thread_ = std::thread(&LaserMappingLifecycleNode::reloc_retry_loop, this);
 }
 
 void LaserMappingLifecycleNode::reloc_retry_loop()
 {
   using namespace std::chrono;
-  auto start_time = steady_clock::now();    // 시도 시작 시간
+  auto start_time = steady_clock::now();
   bool success_done = false;
 
-  using Goal = relocalization_bbs3d::action::GetRelocalizationPose::Goal;
+  using Goal   = relocalization_bbs3d::action::GetRelocalizationPose::Goal;
   using Result = rclcpp_action::ClientGoalHandle<relocalization_bbs3d::action::GetRelocalizationPose>::WrappedResult;
 
   Goal goal_msg;
-  goal_msg.request = true;  // 예) "리로컬라이제이션 해주세요" 라는 의미로 사용
+  goal_msg.request = true;
 
   while (!reloc_stop_flag_)
   {
-    // 1) 타임아웃 체크
     auto elapsed_sec = duration_cast<seconds>(steady_clock::now() - start_time).count();
-    if (elapsed_sec > reloc_timeout_sec_)
-    {
+    if (elapsed_sec > reloc_timeout_sec_) {
       RCLCPP_WARN(get_logger(), "[reloc_retry_loop] Timeout(%d s) reached, stop attempts.", reloc_timeout_sec_);
       break;
     }
 
-    // 2) Goal을 서버에 전송
-    auto send_goal_options =
-      rclcpp_action::Client<relocalization_bbs3d::action::GetRelocalizationPose>::SendGoalOptions();
-
     RCLCPP_INFO(get_logger(), "[reloc_retry_loop] Sending re-localization goal...");
+    auto send_goal_options = rclcpp_action::Client<relocalization_bbs3d::action::GetRelocalizationPose>::SendGoalOptions();
     auto goal_handle_future = reloc_action_client_->async_send_goal(goal_msg, send_goal_options);
 
-    // 2-1) goal_handle_future가 5초 내로 준비되는지 확인
-    if (goal_handle_future.wait_for(std::chrono::seconds(5)) != std::future_status::ready)
-    {
-      RCLCPP_WARN(get_logger(), "[reloc_retry_loop] No response from action server (goal_handle). Retry.");
+    if (goal_handle_future.wait_for(std::chrono::seconds(5))!=std::future_status::ready) {
+      RCLCPP_WARN(get_logger(), "[reloc_retry_loop] No response from server (goal_handle). Retry.");
       continue;
     }
-
     auto goal_handle = goal_handle_future.get();
-    if (!goal_handle)
-    {
+    if (!goal_handle) {
       RCLCPP_ERROR(get_logger(), "[reloc_retry_loop] Failed to get goal handle. Retry.");
       continue;
     }
 
-    // 3) 결과 기다리기 (최대 10초)
     auto result_future = reloc_action_client_->async_get_result(goal_handle);
-
-    if (result_future.wait_for(std::chrono::seconds(10)) != std::future_status::ready)
-    {
+    if (result_future.wait_for(std::chrono::seconds(10))!=std::future_status::ready) {
       RCLCPP_WARN(get_logger(), "[reloc_retry_loop] Action result timeout. Retry.");
       continue;
     }
 
-    // 4) 결과 확인
     Result wrapped_result = result_future.get();
-
-    switch (wrapped_result.code)
-    {
-    case rclcpp_action::ResultCode::SUCCEEDED:
-    {
-      RCLCPP_INFO(get_logger(), "[reloc_retry_loop] Got SUCCEEDED from server");
-
-      // 서버가 제공하는 score를 받아온다고 가정
-      int score = wrapped_result.result->score;
-      RCLCPP_INFO(get_logger(), "Relocalization result: score=%d", score);
-
-      // 여기서 map->odom 변환을 업데이트
+    switch (wrapped_result.code) {
+      case rclcpp_action::ResultCode::SUCCEEDED:
       {
-        const auto &pose_stamped_in_map = wrapped_result.result->pose;  // PoseStamped
-        const auto &pose_in_map         = pose_stamped_in_map.pose;
+        RCLCPP_INFO(get_logger(), "[reloc_retry_loop] Got SUCCEEDED from server");
+        int score = wrapped_result.result->score;
+        RCLCPP_INFO(get_logger(), "Relocalization result: score=%d", score);
 
-        geometry_msgs::msg::Transform transform_map_to_odom;
-        transform_map_to_odom.translation.x = pose_in_map.position.x;
-        transform_map_to_odom.translation.y = pose_in_map.position.y;
-        transform_map_to_odom.translation.z = pose_in_map.position.z;
-        transform_map_to_odom.rotation      = pose_in_map.orientation;
-
-        // thread-safe 하게 보호
+        // map->odom 변환 업데이트
         {
-          std::lock_guard<std::mutex> lock(map_to_odom_mtx_);
-          map_to_odom_     = transform_map_to_odom;
-          have_map_to_odom_ = true;
+          const auto &pose_stamped_in_map = wrapped_result.result->pose;
+          const auto &pose_in_map         = pose_stamped_in_map.pose;
+
+          geometry_msgs::msg::Transform transform_map_to_odom;
+          transform_map_to_odom.translation.x = pose_in_map.position.x;
+          transform_map_to_odom.translation.y = pose_in_map.position.y;
+          transform_map_to_odom.translation.z = pose_in_map.position.z;
+          transform_map_to_odom.rotation      = pose_in_map.orientation;
+
+          {
+            std::lock_guard<std::mutex> lock(map_to_odom_mtx_);
+            map_to_odom_ = transform_map_to_odom;
+            have_map_to_odom_ = true;
+          }
         }
-      }
 
-      // 이제 점수를 체크해서 threshold 이상이면 성공 처리
-      if (score >= static_cast<int>(reloc_score_threshold_))
-      {
-        RCLCPP_INFO(get_logger(),
-          "[reloc_retry_loop] Re-localization done! score=%d >= threshold=%.1f",
-          score, reloc_score_threshold_);
-        success_done = true;
-        break;  // while 루프 탈출
+        if (score >= (int)reloc_score_threshold_) {
+          RCLCPP_INFO(get_logger(),
+            "[reloc_retry_loop] Re-localization done! score=%d >= threshold=%.1f",
+            score, reloc_score_threshold_);
+          success_done = true;
+          break;
+        } else {
+          RCLCPP_WARN(get_logger(),
+            "[reloc_retry_loop] Low score(%d < %.1f). Keep trying...",
+            score, reloc_score_threshold_);
+        }
+        break;
       }
-      else
-      {
-        RCLCPP_WARN(get_logger(),
-          "[reloc_retry_loop] Low score(%d < %.1f). Keep trying...",
-          score, reloc_score_threshold_);
-      }
-      break;
-    }
-    case rclcpp_action::ResultCode::ABORTED:
-      RCLCPP_WARN(get_logger(), "[reloc_retry_loop] Reloc aborted. retry...");
-      break;
-    case rclcpp_action::ResultCode::CANCELED:
-      RCLCPP_WARN(get_logger(), "[reloc_retry_loop] Reloc canceled. retry...");
-      break;
-    default:
-      RCLCPP_ERROR(get_logger(),
-                   "[reloc_retry_loop] Unknown result code=%d. retry...",
-                   static_cast<int>(wrapped_result.code));
-      break;
+      case rclcpp_action::ResultCode::ABORTED:
+        RCLCPP_WARN(get_logger(), "[reloc_retry_loop] Reloc aborted. retry...");
+        break;
+      case rclcpp_action::ResultCode::CANCELED:
+        RCLCPP_WARN(get_logger(), "[reloc_retry_loop] Reloc canceled. retry...");
+        break;
+      default:
+        RCLCPP_ERROR(get_logger(),
+          "[reloc_retry_loop] Unknown result code=%d. retry...",
+          (int)wrapped_result.code);
+        break;
     }
 
-    // 최종적으로 성공하지 못하면 1초 대기 후 다시 시도
-    if (success_done)
-    {
-      // loop를 빠져나가기 위해 break 필요
+    if (success_done) {
       break;
-    }
-    else
-    {
+    } else {
       std::this_thread::sleep_for(std::chrono::seconds(1));
     }
-  } // end while
-
-  // 루프 종료 후
-  if (!success_done)
-  {
-    RCLCPP_WARN(get_logger(), "[reloc_retry_loop] Finished attempts without success or timed out.");
   }
-  else
-  {
+
+  if (!success_done) {
+    RCLCPP_WARN(get_logger(), "[reloc_retry_loop] Finished attempts without success or timed out.");
+  } else {
     RCLCPP_INFO(get_logger(), "[reloc_retry_loop] Final success!");
   }
 }

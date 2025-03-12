@@ -3,11 +3,14 @@
 import os
 
 from launch import LaunchDescription
-from launch.actions import RegisterEventHandler, EmitEvent, TimerAction
-from launch_ros.actions import LifecycleNode
+from launch.substitutions import LaunchConfiguration
+from launch.actions import RegisterEventHandler, DeclareLaunchArgument, EmitEvent, TimerAction
+from launch_ros.actions import LifecycleNode, Node
 from launch_ros.event_handlers import OnStateTransition
 from launch_ros.events.lifecycle import ChangeState
+from launch.conditions import IfCondition
 from lifecycle_msgs.msg import Transition as LifecycleTransition
+
 
 # ament_index_python 을 통해 패키지별 share 디렉토리 경로를 찾을 수 있음
 from ament_index_python.packages import get_package_share_directory
@@ -17,10 +20,15 @@ def generate_launch_description():
     # 1) 각 패키지의 share 디렉토리 경로를 얻는다
     fast_lio_share_dir = get_package_share_directory('fast_lio')
     relocal_bbs3d_share_dir = get_package_share_directory('relocalization_bbs3d')
+    default_rviz_config_path = os.path.join(fast_lio_share_dir, 'rviz', 'fastlio.rviz')
 
     # 2) config 폴더 안의 yaml 파일 경로를 합친다
     fast_lio_config = os.path.join(fast_lio_share_dir, 'config', 'mid360.yaml')
     relocalization_config = os.path.join(relocal_bbs3d_share_dir, 'config', 'bbs3d_config.yaml')
+
+    rviz_use = LaunchConfiguration('rviz')
+    rviz_cfg = LaunchConfiguration('rviz_cfg')
+
 
     # [A] Relocalization Lifecycle Node
     relocalization_node = LifecycleNode(
@@ -80,6 +88,24 @@ def generate_launch_description():
         )
     )
 
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        arguments=['-d', rviz_cfg],
+        condition=IfCondition(rviz_use),
+        output='screen'
+    )
+
+    declare_rviz_cmd = DeclareLaunchArgument(
+    'rviz', default_value='true',
+    description='Launch RViz if true'
+    )
+    declare_rviz_config_path_cmd = DeclareLaunchArgument(
+    'rviz_cfg', default_value=default_rviz_config_path,
+    description='Path to RViz config file'
+    )
+
+
     return LaunchDescription([
         # Lifecycle Node 등록
         relocalization_node,
@@ -90,5 +116,8 @@ def generate_launch_description():
         relocalization_activate_evt,
 
         # Reloc active -> Fast-LIO configure->activate
-        event_handler
+        event_handler,
+        declare_rviz_cmd,
+        declare_rviz_config_path_cmd,
+        rviz_node
     ])
