@@ -31,7 +31,9 @@
   <depend>pcl_conversions</depend>
   <depend>livox_ros_driver2</depend>
   <depend>nav2_util</depend>
+  <depend>relocalization_bbs3d</depend>
 
+  <exec_depend>nav2_lifecycle_manager</exec_depend>
   <exec_depend>rosidl_default_runtime</exec_depend>
   <member_of_group>rosidl_interface_packages</member_of_group>
 

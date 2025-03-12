@@ -829,7 +829,7 @@ LaserMappingLifecycleNode::on_activate(const rclcpp_lifecycle::State &)
   {
     if (!reloc_action_client_->wait_for_action_server(std::chrono::seconds(100)))
     {
-      RCLCPP_WARN(get_logger(), "Relocalization action server not ready...");
+      RCLCPP_ERROR(get_logger(), "Relocalization action server not ready...");
       return nav2_util::CallbackReturn::FAILURE;
     }
     else
@@ -1178,68 +1178,6 @@ void LaserMappingLifecycleNode::publish_odometry()
   pubOdomAftMapped_->publish(odomAftMapped);
 }
 
-void LaserMappingLifecycleNode::request_relocalization()
-{
-  using Goal = GetRelocPose::Goal;
-  auto goal_msg = Goal();
-  goal_msg.request = true;
-
-  auto send_goal_options = rclcpp_action::Client<GetRelocPose>::SendGoalOptions();
-  send_goal_options.result_callback = std::bind(
-      &LaserMappingLifecycleNode::relocalization_response_callback,
-      this, std::placeholders::_1);
-
-  reloc_action_client_->async_send_goal(goal_msg, send_goal_options);
-}
-
-void LaserMappingLifecycleNode::relocalization_response_callback(
-    const rclcpp_action::ClientGoalHandle<GetRelocPose>::WrappedResult &result)
-{
-  switch (result.code)
-  {
-  case rclcpp_action::ResultCode::SUCCEEDED:
-  {
-    RCLCPP_INFO(get_logger(), "Relocalization SUCCEEDED.");
-    // (예) result.result->pose 를 map->odom 변환으로 만들기
-    //  pose는 map 좌표계에서 odom 좌표계 원점을 어떻게 배치할지 결정하는 transform(역변환) 등
-    //  상황에 따라 적절히 계산해야 합니다.
-    //  여기선 예시로, 단순히 "odom의 원점이 map 좌표에서 pose 위치/방향"이라 가정
-
-    // 1) PoseStamped를 통째로 가져옴
-    const auto &pose_stamped_in_map = result.result->pose; // (PoseStamped)
-
-    // 2) pose_stamped_in_map.pose 가 geometry_msgs::msg::Pose
-    const auto &pose_in_map = pose_stamped_in_map.pose;
-    geometry_msgs::msg::Transform transform_map_to_odom;
-
-    // 위치
-    transform_map_to_odom.translation.x = pose_in_map.position.x;
-    transform_map_to_odom.translation.y = pose_in_map.position.y;
-    transform_map_to_odom.translation.z = pose_in_map.position.z;
-
-    // 방향
-    transform_map_to_odom.rotation = pose_in_map.orientation;
-
-    // 저장
-    {
-      std::lock_guard<std::mutex> lock(map_to_odom_mtx_);
-      map_to_odom_ = transform_map_to_odom;
-      have_map_to_odom_ = true;
-    }
-    break;
-  }
-  case rclcpp_action::ResultCode::ABORTED:
-    RCLCPP_ERROR(get_logger(), "Relocalization ABORTED.");
-    break;
-  case rclcpp_action::ResultCode::CANCELED:
-    RCLCPP_ERROR(get_logger(), "Relocalization CANCELED.");
-    break;
-  default:
-    RCLCPP_ERROR(get_logger(), "Relocalization UNKNOWN RESULT CODE.");
-    break;
-  }
-}
-
 void LaserMappingLifecycleNode::map_to_odom_pose_cb(const geometry_msgs::msg::PoseStamped::SharedPtr msg)
 {
   // thread-safe하게 보호
@@ -1280,17 +1218,18 @@ void LaserMappingLifecycleNode::start_reloc_retry_loop()
 void LaserMappingLifecycleNode::reloc_retry_loop()
 {
   using namespace std::chrono;
-  auto start_time = steady_clock::now();
+  auto start_time = steady_clock::now();    // 시도 시작 시간
   bool success_done = false;
 
   using Goal = relocalization_bbs3d::action::GetRelocalizationPose::Goal;
   using Result = rclcpp_action::ClientGoalHandle<relocalization_bbs3d::action::GetRelocalizationPose>::WrappedResult;
+
   Goal goal_msg;
-  goal_msg.request = true;
+  goal_msg.request = true;  // 예) "리로컬라이제이션 해주세요" 라는 의미로 사용
 
   while (!reloc_stop_flag_)
   {
-    // 타임아웃 체크
+    // 1) 타임아웃 체크
     auto elapsed_sec = duration_cast<seconds>(steady_clock::now() - start_time).count();
     if (elapsed_sec > reloc_timeout_sec_)
     {
@@ -1298,14 +1237,14 @@ void LaserMappingLifecycleNode::reloc_retry_loop()
       break;
     }
 
-    // 1) GoalHandle 비동기 전송
-    auto send_goal_options = rclcpp_action::Client<relocalization_bbs3d::action::GetRelocalizationPose>::SendGoalOptions();
-    RCLCPP_INFO(get_logger(), "[reloc_retry_loop] Sending re-localization goal...");
+    // 2) Goal을 서버에 전송
+    auto send_goal_options =
+      rclcpp_action::Client<relocalization_bbs3d::action::GetRelocalizationPose>::SendGoalOptions();
 
-    // goal_handle_future : std::future<GoalHandle::SharedPtr>
+    RCLCPP_INFO(get_logger(), "[reloc_retry_loop] Sending re-localization goal...");
     auto goal_handle_future = reloc_action_client_->async_send_goal(goal_msg, send_goal_options);
 
-    // 1-1) goal_handle_future가 5초 내로 준비되는지 확인
+    // 2-1) goal_handle_future가 5초 내로 준비되는지 확인
     if (goal_handle_future.wait_for(std::chrono::seconds(5)) != std::future_status::ready)
     {
       RCLCPP_WARN(get_logger(), "[reloc_retry_loop] No response from action server (goal_handle). Retry.");
@@ -1319,9 +1258,7 @@ void LaserMappingLifecycleNode::reloc_retry_loop()
       continue;
     }
 
-    // 2) 결과 기다리기 (10초)
-    //    goal_handle->async_get_result()는 private 이므로,
-    //    **reloc_action_client_->async_get_result(goal_handle)** 형태로 사용
+    // 3) 결과 기다리기 (최대 10초)
     auto result_future = reloc_action_client_->async_get_result(goal_handle);
 
     if (result_future.wait_for(std::chrono::seconds(10)) != std::future_status::ready)
@@ -1330,48 +1267,81 @@ void LaserMappingLifecycleNode::reloc_retry_loop()
       continue;
     }
 
-    // 3) 결과 확인
+    // 4) 결과 확인
     Result wrapped_result = result_future.get();
-    if (wrapped_result.code == rclcpp_action::ResultCode::SUCCEEDED)
-    {
-      // 서버가 score를 함께 반환한다고 가정
-      int score = wrapped_result.result->score;
-      RCLCPP_INFO(get_logger(), "[reloc_retry_loop] Got SUCCEEDED, score=%d", score);
 
+    switch (wrapped_result.code)
+    {
+    case rclcpp_action::ResultCode::SUCCEEDED:
+    {
+      RCLCPP_INFO(get_logger(), "[reloc_retry_loop] Got SUCCEEDED from server");
+
+      // 서버가 제공하는 score를 받아온다고 가정
+      int score = wrapped_result.result->score;
+      RCLCPP_INFO(get_logger(), "Relocalization result: score=%d", score);
+
+      // 여기서 map->odom 변환을 업데이트
+      {
+        const auto &pose_stamped_in_map = wrapped_result.result->pose;  // PoseStamped
+        const auto &pose_in_map         = pose_stamped_in_map.pose;
+
+        geometry_msgs::msg::Transform transform_map_to_odom;
+        transform_map_to_odom.translation.x = pose_in_map.position.x;
+        transform_map_to_odom.translation.y = pose_in_map.position.y;
+        transform_map_to_odom.translation.z = pose_in_map.position.z;
+        transform_map_to_odom.rotation      = pose_in_map.orientation;
+
+        // thread-safe 하게 보호
+        {
+          std::lock_guard<std::mutex> lock(map_to_odom_mtx_);
+          map_to_odom_     = transform_map_to_odom;
+          have_map_to_odom_ = true;
+        }
+      }
+
+      // 이제 점수를 체크해서 threshold 이상이면 성공 처리
       if (score >= static_cast<int>(reloc_score_threshold_))
       {
         RCLCPP_INFO(get_logger(),
-                    "[reloc_retry_loop] Re-localization done! score=%d >= threshold=%.1f",
-                    score, reloc_score_threshold_);
+          "[reloc_retry_loop] Re-localization done! score=%d >= threshold=%.1f",
+          score, reloc_score_threshold_);
         success_done = true;
-        break; // 재시도 루프 종료
+        break;  // while 루프 탈출
       }
       else
       {
         RCLCPP_WARN(get_logger(),
-                    "[reloc_retry_loop] Low score(%d < %.1f). Keep trying...",
-                    score, reloc_score_threshold_);
+          "[reloc_retry_loop] Low score(%d < %.1f). Keep trying...",
+          score, reloc_score_threshold_);
       }
+      break;
     }
-    else if (wrapped_result.code == rclcpp_action::ResultCode::ABORTED)
-    {
+    case rclcpp_action::ResultCode::ABORTED:
       RCLCPP_WARN(get_logger(), "[reloc_retry_loop] Reloc aborted. retry...");
-    }
-    else if (wrapped_result.code == rclcpp_action::ResultCode::CANCELED)
-    {
+      break;
+    case rclcpp_action::ResultCode::CANCELED:
       RCLCPP_WARN(get_logger(), "[reloc_retry_loop] Reloc canceled. retry...");
-    }
-    else
-    {
+      break;
+    default:
       RCLCPP_ERROR(get_logger(),
                    "[reloc_retry_loop] Unknown result code=%d. retry...",
                    static_cast<int>(wrapped_result.code));
+      break;
     }
 
-    // 다음 시도 전 잠시 대기
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-  }
+    // 최종적으로 성공하지 못하면 1초 대기 후 다시 시도
+    if (success_done)
+    {
+      // loop를 빠져나가기 위해 break 필요
+      break;
+    }
+    else
+    {
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+  } // end while
 
+  // 루프 종료 후
   if (!success_done)
   {
     RCLCPP_WARN(get_logger(), "[reloc_retry_loop] Finished attempts without success or timed out.");
@@ -1381,6 +1351,7 @@ void LaserMappingLifecycleNode::reloc_retry_loop()
     RCLCPP_INFO(get_logger(), "[reloc_retry_loop] Final success!");
   }
 }
+
 
 // main 함수
 int main(int argc, char **argv)

@@ -1,107 +1,94 @@
+# file: lio_relocalization_system_no_nav2lm.launch.py
+
 import os
-from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, OpaqueFunction
-from launch.conditions import IfCondition
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.actions import RegisterEventHandler, EmitEvent, TimerAction
+from launch_ros.actions import LifecycleNode
+from launch_ros.event_handlers import OnStateTransition
+from launch_ros.events.lifecycle import ChangeState
+from lifecycle_msgs.msg import Transition as LifecycleTransition
 
-from launch_ros.actions import LifecycleNode, Node, ComposableNodeContainer
-from launch_ros.descriptions import ComposableNode
+# ament_index_python 을 통해 패키지별 share 디렉토리 경로를 찾을 수 있음
+from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
-    # Package paths
-    fast_lio_pkg_dir = get_package_share_directory('fast_lio')
-    relocalization_pkg_dir = get_package_share_directory('relocalization_bbs3d')
-    
-    # Config paths
-    default_config_path = os.path.join(fast_lio_pkg_dir, 'config')
-    default_rviz_config_path = os.path.join(fast_lio_pkg_dir, 'rviz', 'fastlio.rviz')
-    relocalization_config_file = os.path.join(relocalization_pkg_dir, 'config', 'bbs3d_config.yaml')
-    
-    # Launch configurations
-    use_sim_time = LaunchConfiguration('use_sim_time', default='false')
-    config_path = LaunchConfiguration('config_path', default=default_config_path)
-    config_file = LaunchConfiguration('config_file', default='mid360.yaml')
-    rviz_use = LaunchConfiguration('rviz', default='true')
-    rviz_cfg = LaunchConfiguration('rviz_cfg', default=default_rviz_config_path)
-    
-    # Relocalization Node Container
-    relocalization_container = ComposableNodeContainer(
-        name='relocalization_container',
+
+    # 1) 각 패키지의 share 디렉토리 경로를 얻는다
+    fast_lio_share_dir = get_package_share_directory('fast_lio')
+    relocal_bbs3d_share_dir = get_package_share_directory('relocalization_bbs3d')
+
+    # 2) config 폴더 안의 yaml 파일 경로를 합친다
+    fast_lio_config = os.path.join(fast_lio_share_dir, 'config', 'mid360.yaml')
+    relocalization_config = os.path.join(relocal_bbs3d_share_dir, 'config', 'bbs3d_config.yaml')
+
+    # [A] Relocalization Lifecycle Node
+    relocalization_node = LifecycleNode(
+        package='relocalization_bbs3d',
+        executable='relocalization_bbs3d_node',
+        name='relocalization_bbs3d_node',
         namespace='',
-        package='rclcpp_components',
-        executable='component_container_mt',
-        composable_node_descriptions=[
-            ComposableNode(
-                package='relocalization_bbs3d',
-                plugin='relocalization_bbs3d::relocalizationBBS3DNode',
-                name='relocalization_bbs3d_node',
-                parameters=[relocalization_config_file],
-            ),
-        ],
-        output='screen'
+        output='screen',
+        parameters=[relocalization_config],  # YAML 파일 지정
     )
-    
-    # Fast-LIO Node
+
+    # [B] Fast-LIO Lifecycle Node
     fast_lio_node = LifecycleNode(
         package='fast_lio',
         executable='fastlio_mapping',
         name='laser_mapping_lifecycle_node',
         namespace='',
-        parameters=[
-            PathJoinSubstitution([config_path, config_file]),
-            {'use_sim_time': use_sim_time}
-        ],
-        output='screen'
-    )
-    
-    # Lifecycle Manager for Relocalization
-    relocalization_lifecycle_manager = Node(
-        package='nav2_lifecycle_manager',
-        executable='lifecycle_manager',
-        name='lifecycle_manager_relocalization',
         output='screen',
-        parameters=[{
-            'autostart': True,
-            'bond_timeout': 0.0,
-            'node_names': ['relocalization_bbs3d_node'],
-            'configure_timeout': 30.0,
-            'activate_timeout': 30.0
-        }]
+        parameters=[fast_lio_config],        # YAML 파일 지정
     )
-    
-    # Lifecycle Manager for Fast-LIO
-    # Started after relocalization is ready
-    fastlio_lifecycle_manager = Node(
-        package='nav2_lifecycle_manager',
-        executable='lifecycle_manager',
-        name='lifecycle_manager_fastlio',
-        output='screen',
-        parameters=[{
-            'autostart': True,
-            'bond_timeout': 0.0,
-            'node_names': ['laser_mapping_lifecycle_node'],
-            'configure_timeout': 20.0,
-            'activate_timeout': 20.0
-        }]
+
+    # ---(C) Reloc 노드를 일정 시간 뒤에 configure -> activate--- #
+    relocalization_configure_evt = TimerAction(
+        period=2.0,  # 2초 뒤에 Configure
+        actions=[
+            EmitEvent(event=ChangeState(
+                lifecycle_node_matcher=lambda node: node if node == relocalization_node else None,
+                transition_id=LifecycleTransition.TRANSITION_CONFIGURE
+            ))
+        ]
     )
-    
-    # RViz Node
-    rviz_node = Node(
-        package='rviz2',
-        executable='rviz2',
-        arguments=['-d', rviz_cfg],
-        condition=IfCondition(rviz_use),
-        output='screen'
+    relocalization_activate_evt = TimerAction(
+        period=4.0,  # 4초 뒤에 Activate
+        actions=[
+            EmitEvent(event=ChangeState(
+                lifecycle_node_matcher=lambda node: node if node == relocalization_node else None,
+                transition_id=LifecycleTransition.TRANSITION_ACTIVATE
+            ))
+        ]
     )
-    
+
+    # ---(D) Reloc 노드가 active가 되면 Fast-LIO를 configure -> activate--- #
+    event_handler = RegisterEventHandler(
+        OnStateTransition(
+            target_lifecycle_node=relocalization_node,
+            goal_state='active',
+            entities=[
+                EmitEvent(event=ChangeState(
+                    lifecycle_node_matcher=lambda node: node if node == fast_lio_node else None,
+                    transition_id=LifecycleTransition.TRANSITION_CONFIGURE
+                )),
+                EmitEvent(event=ChangeState(
+                    lifecycle_node_matcher=lambda node: node if node == fast_lio_node else None,
+                    transition_id=LifecycleTransition.TRANSITION_ACTIVATE
+                ))
+            ]
+        )
+    )
+
     return LaunchDescription([
-        relocalization_container,
-        relocalization_lifecycle_manager,
-        # 1초 후에 Fast-LIO 시작
+        # Lifecycle Node 등록
+        relocalization_node,
         fast_lio_node,
-        # 2초 후에 Fast-LIO lifecycle manager 시작
-        fastlio_lifecycle_manager,
-        rviz_node
+
+        # Reloc autostart (configure->activate)
+        relocalization_configure_evt,
+        relocalization_activate_evt,
+
+        # Reloc active -> Fast-LIO configure->activate
+        event_handler
     ])

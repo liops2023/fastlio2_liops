@@ -89,6 +89,7 @@ find_package(pcl_ros REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(livox_ros_driver2 REQUIRED)
 find_package(nav2_util REQUIRED)
+find_package(nav2_lifecycle_manager REQUIRED) 
 find_package(tf2_ros REQUIRED)
 
 #---------------------------#
@@ -133,6 +134,7 @@ set(dependencies
   nav2_util
   tf2_ros
   relocalization_bbs3d
+  nav2_lifecycle_manager
 )
 
 #--------------------------------------------#

@@ -47,11 +47,6 @@
             cloud_registered_en: true
             cloud_registered_topic: "/cloud_registered"   
 
-        pcd_save:
-            pcd_save_en: true
-            interval: -1                 # how many LiDAR frames saved in each pcd file; 
-                                        # -1 : all frames will be saved in ONE pcd file, may lead to memory crash when having too much frames.
-
         tf:
             map_frame_id: "map"
             odom_frame_id: "odom"
